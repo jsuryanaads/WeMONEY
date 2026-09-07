@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, CreditCard, LayoutDashboard, Plus, Settings, Tags, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { getTransactionsForPeriod } from '../services/transactionService'
@@ -16,6 +17,7 @@ function getRange(period, month) {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [period, setPeriod] = useState('month')
   const [month, setMonth] = useState(new Date().getMonth())
   const [rows, setRows] = useState([])
@@ -54,8 +56,7 @@ export default function Dashboard() {
   return <AppShell title="Dashboard">
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><p className="text-sm text-slate-500">{today}</p><h2 className="mt-1 text-2xl font-extrabold text-slate-900">Selamat datang kembali 👋</h2><p className="text-sm text-slate-500">Pantau kondisi keuanganmu hari ini.</p></div>
-      <button onClick={() => window.location.assign('#')} className="hidden" aria-hidden="true" tabIndex={-1}>x</button>
-      <button onClick={() => { window.history.pushState({}, '', `${import.meta.env.BASE_URL}transaksi`); window.dispatchEvent(new PopStateEvent('popstate')) }} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20"><Plus size={18}/>Tambah Transaksi</button>
+      <button onClick={() => navigate('/transaksi')} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20"><Plus size={18}/>Tambah Transaksi</button>
     </div>
     <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
       {[['month','Bulan Ini'],['week','Minggu Ini'],['year','Tahun Ini']].map(([key,label]) => <button key={key} onClick={() => setPeriod(key)} className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold ${period === key ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}>{label}</button>)}
@@ -65,7 +66,7 @@ export default function Dashboard() {
     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Card title="Total Pemasukan" value={totals.income} icon={TrendingUp} tone="emerald" loading={loading}/><Card title="Total Pengeluaran" value={totals.expense} icon={TrendingDown} tone="rose" loading={loading}/><Card title="Saldo Semua Dompet" value={totalBalance} icon={Wallet} tone="blue" loading={loading}/></section>
     <section className="mt-6 grid gap-6 lg:grid-cols-2">
       <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h3 className="font-bold">Ringkasan Pengeluaran</h3><p className="mt-1 text-xs text-slate-400">Berdasarkan periode aktif</p><div className="mt-5 space-y-4">{!loading&&!categories.length&&<p className="text-sm text-slate-400">Belum ada pengeluaran.</p>}{categories.map(item=><div key={item.name}><div className="mb-2 flex justify-between gap-3 text-sm"><span className="truncate">{item.name}</span><span className="font-semibold">{item.percent}% · {money(item.amount)}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-blue-600" style={{width:`${item.percent}%`}}/></div></div>)}</div></div>
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="flex items-center justify-between"><div><h3 className="font-bold">Transaksi Terbaru</h3><p className="mt-1 text-xs text-slate-400">Periode aktif</p></div><a href={`${import.meta.env.BASE_URL}transaksi`} className="text-xs font-bold text-blue-600">Lihat semua</a></div><div className="mt-4 divide-y divide-slate-100">{!loading&&!rows.length&&<p className="py-8 text-sm text-slate-400">Belum ada transaksi.</p>}{rows.slice(0,5).map(tx=><div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold">{tx.description||'Tanpa keterangan'}</p><p className="text-xs text-slate-400">{tx.category?.name||'Tanpa kategori'} · {tx.wallet?.name||'Tanpa dompet'} · {tx.transaction_date}</p></div><span className={`whitespace-nowrap text-sm font-bold ${tx.type==='income'?'text-emerald-600':'text-rose-600'}`}>{tx.type==='income'?'+':'-'}{money(tx.amount)}</span></div>)}</div></div>
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="flex items-center justify-between"><div><h3 className="font-bold">Transaksi Terbaru</h3><p className="mt-1 text-xs text-slate-400">Periode aktif</p></div><button onClick={() => navigate('/transaksi')} className="text-xs font-bold text-blue-600">Lihat semua</button></div><div className="mt-4 divide-y divide-slate-100">{!loading&&!rows.length&&<p className="py-8 text-sm text-slate-400">Belum ada transaksi.</p>}{rows.slice(0,5).map(tx=><div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold">{tx.description||'Tanpa keterangan'}</p><p className="text-xs text-slate-400">{tx.category?.name||'Tanpa kategori'} · {tx.wallet?.name||'Tanpa dompet'} · {tx.transaction_date}</p></div><span className={`whitespace-nowrap text-sm font-bold ${tx.type==='income'?'text-emerald-600':'text-rose-600'}`}>{tx.type==='income'?'+':'-'}{money(tx.amount)}</span></div>)}</div></div>
     </section>
   </AppShell>
 }
