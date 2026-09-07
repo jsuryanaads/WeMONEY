@@ -11,6 +11,11 @@ export async function resetFinancialData() {
   if (error) throw error
 }
 
+export async function deleteMyAccount() {
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) throw error
+}
+
 export async function exportTransactionsCsv(userId) {
   const { data, error } = await supabase
     .from('transactions')
@@ -22,15 +27,7 @@ export async function exportTransactionsCsv(userId) {
   const escape = value => `"${String(value ?? '').replaceAll('"', '""')}"`
   const rows = [
     ['Tanggal', 'Jenis', 'Nominal', 'Kategori', 'Dompet', 'Keterangan', 'Catatan'],
-    ...(data ?? []).map(row => [
-      row.transaction_date,
-      row.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
-      row.amount,
-      row.category?.name ?? '',
-      row.wallet?.name ?? '',
-      row.description ?? '',
-      row.notes ?? '',
-    ]),
+    ...(data ?? []).map(row => [row.transaction_date, row.type === 'income' ? 'Pemasukan' : 'Pengeluaran', row.amount, row.category?.name ?? '', row.wallet?.name ?? '', row.description ?? '', row.notes ?? '']),
   ]
   const csv = '\uFEFF' + rows.map(row => row.map(escape).join(',')).join('\r\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -39,5 +36,5 @@ export async function exportTransactionsCsv(userId) {
   anchor.href = url
   anchor.download = `wemoney-transaksi-${new Date().toISOString().slice(0, 10)}.csv`
   anchor.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
