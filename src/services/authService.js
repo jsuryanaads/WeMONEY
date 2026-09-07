@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase'
 
+const appUrl = (path = '') => `${window.location.origin}${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
+
 export async function signIn(email, password) {
   return supabase.auth.signInWithPassword({ email, password })
 }
@@ -10,7 +12,7 @@ export async function signUp(email, password, fullName) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${window.location.origin}/dashboard`,
+      emailRedirectTo: appUrl('dashboard'),
     },
   })
 }
@@ -21,7 +23,7 @@ export async function signOut() {
 
 export async function requestPasswordReset(email) {
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
+    redirectTo: appUrl('reset-password'),
   })
 }
 
