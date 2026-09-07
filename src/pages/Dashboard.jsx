@@ -13,7 +13,7 @@ const nav = [
   ['Pengaturan', '/pengaturan', Settings],
 ]
 
-const months = Array.from({ length: 12 }, (_, i) => new Date(2026, i, 1))
+const months = Array.from({ length: 12 }, (_, i) => new Date(new Date().getFullYear(), i, 1))
 
 function formatIDR(value) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
@@ -33,28 +33,25 @@ function periodRange(period, monthDate) {
     start.setDate(today.getDate() - 6)
     return [isoDate(start), isoDate(today)]
   }
-  if (period === 'year') {
-    return [`${today.getFullYear()}-01-01`, `${today.getFullYear()}-12-31`]
-  }
+  if (period === 'year') return [`${today.getFullYear()}-01-01`, `${today.getFullYear()}-12-31`]
   const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
   const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
   return [isoDate(start), isoDate(end)]
 }
 
 function chartRows(transactions, period, monthDate) {
+  const [startDate, endDate] = periodRange(period, monthDate)
   if (period === 'year') {
-    return Array.from({ length: 12 }, (_, index) => {
-      const key = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`
-      return transactions.reduce((row, tx) => {
-        if (tx.transaction_date.startsWith(key)) row[tx.type] += Number(tx.amount)
-        return row
-      }, { name: new Date(new Date().getFullYear(), index, 1).toLocaleDateString('id-ID', { month: 'short' }), income: 0, expense: 0 })
+    const year = new Date().getFullYear()
+    return Array.from({ length: 12 }, (_, i) => {
+      const key = `${year}-${String(i + 1).padStart(2, '0')}`
+      const row = { name: new Date(year, i, 1).toLocaleDateString('id-ID', { month: 'short' }), income: 0, expense: 0 }
+      transactions.forEach(tx => { if (tx.transaction_date.startsWith(key)) row[tx.type] += Number(tx.amount) })
+      return row
     })
   }
-  const start = new Date(`${periodRange(period, monthDate)[0]}T00:00:00`)
-  const end = new Date(`${periodRange(period, monthDate)[1]}T00:00:00`)
   const rows = []
-  for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+  for (let cursor = new Date(`${startDate}T00:00:00`), end = new Date(`${endDate}T00:00:00`); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
     const key = isoDate(cursor)
     const row = { name: period === 'week' ? cursor.toLocaleDateString('id-ID', { weekday: 'short' }) : String(cursor.getDate()).padStart(2, '0'), income: 0, expense: 0 }
     transactions.forEach(tx => { if (tx.transaction_date === key) row[tx.type] += Number(tx.amount) })
@@ -73,7 +70,6 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
   const [startDate, endDate] = useMemo(() => periodRange(period, monthDate), [period, monthDate])
 
   useEffect(() => {
@@ -96,8 +92,7 @@ export default function Dashboard() {
   }, [user?.id, startDate, endDate])
 
   const totals = useMemo(() => transactions.reduce((result, tx) => {
-    const amount = Number(tx.amount)
-    result[tx.type] += amount
+    result[tx.type] += Number(tx.amount)
     return result
   }, { income: 0, expense: 0 }), [transactions])
 
@@ -110,13 +105,12 @@ export default function Dashboard() {
       grouped[name] = (grouped[name] || 0) + Number(tx.amount)
     })
     const total = totals.expense || 0
-    return Object.entries(grouped).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, amount]) => ({ label, amount, percent: total ? Math.round(amount / total * 100) : 0 }))
+    return Object.entries(grouped).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, amount]) => ({ label, percent: total ? Math.round(amount / total * 100) : 0 }))
   }, [transactions, totals.expense])
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Pengguna'
   const activeLabel = nav.find(item => item[1] === location.pathname)?.[0] || 'Dashboard'
   const dateLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
-
   const go = path => { setMenuOpen(false); navigate(path) }
 
   return <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -138,7 +132,7 @@ export default function Dashboard() {
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Summary title="Total Pemasukan" value={formatIDR(totals.income)} icon={TrendingUp} tone="emerald" loading={loading}/><Summary title="Total Pengeluaran" value={formatIDR(totals.expense)} icon={TrendingDown} tone="rose" loading={loading}/><Summary title="Saldo" value={formatIDR(totals.income - totals.expense)} icon={Wallet} tone="blue" loading={loading}/></section>
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]"><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="mb-5 flex items-center justify-between gap-3"><div><h3 className="font-bold text-slate-900">Arus Keuangan</h3><p className="text-xs text-slate-400">Pemasukan vs pengeluaran</p></div>{period === 'month' && <select value={monthDate.getMonth()} onChange={e => setMonthDate(new Date(2026, Number(e.target.value), 1))} className="rounded-lg border border-slate-200 px-3 py-2 text-xs" aria-label="Pilih bulan">{months.map(date => <option key={date.getMonth()} value={date.getMonth()}>{date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>)}</select>}</div><div className="h-64">{loading ? <div className="grid h-full place-items-center text-sm text-slate-400">Memuat grafik...</div> : <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name" tickLine={false} axisLine={false}/><YAxis tickLine={false} axisLine={false}/><Tooltip formatter={value => formatIDR(value)}/><Bar dataKey="income" name="Pemasukan" fill="#2563eb" radius={[5,5,0,0]}/><Bar dataKey="expense" name="Pengeluaran" fill="#e11d48" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer>}</div></div>
+        <section className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]"><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="mb-5 flex items-center justify-between gap-3"><div><h3 className="font-bold text-slate-900">Arus Keuangan</h3><p className="text-xs text-slate-400">Pemasukan vs pengeluaran</p></div>{period === 'month' && <select value={monthDate.getMonth()} onChange={e => setMonthDate(new Date(new Date().getFullYear(), Number(e.target.value), 1))} className="rounded-lg border border-slate-200 px-3 py-2 text-xs" aria-label="Pilih bulan">{months.map(date => <option key={date.getMonth()} value={date.getMonth()}>{date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>)}</select>}</div><div className="h-64">{loading ? <div className="grid h-full place-items-center text-sm text-slate-400">Memuat grafik...</div> : <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name" tickLine={false} axisLine={false}/><YAxis tickLine={false} axisLine={false}/><Tooltip formatter={value => formatIDR(value)}/><Bar dataKey="income" name="Pemasukan" fill="#2563eb" radius={[5,5,0,0]}/><Bar dataKey="expense" name="Pengeluaran" fill="#e11d48" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer>}</div></div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h3 className="font-bold">Ringkasan Pengeluaran</h3><p className="mt-1 text-xs text-slate-400">Berdasarkan kategori pada periode aktif</p><div className="mt-5 space-y-5">{loading ? <p className="text-sm text-slate-400">Memuat ringkasan...</p> : categorySummary.length ? categorySummary.map(item => <Progress key={item.label} label={item.label} value={`${item.percent}%`} width={`${item.percent}%`}/>) : <p className="text-sm text-slate-400">Belum ada pengeluaran pada periode ini.</p>}</div></div></section>
 
@@ -155,11 +149,16 @@ function Summary({ title, value, icon: Icon, tone, loading }) {
   return <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-slate-500">{title}</p><p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{loading ? 'Memuat...' : value}</p></div><div className={`grid h-11 w-11 place-items-center rounded-xl ${styles[tone]}`}><Icon size={21}/></div></div></div>
 }
 
-function Progress({ label, value, width }) { return <div><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-slate-400">{value}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width }}/></div></div></div> }
+function Progress({ label, value, width }) {
+  return <div><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-slate-400">{value}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width }}/></div></div></div>
+}
 
 function TransactionRow({ transaction }) {
   const income = transaction.type === 'income'
-  return <div className="flex items-center justify-between gap-3 py-4"><div className="flex min-w-0 items-center gap-3"><div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${income ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{income ? <TrendingUp size={18}/> : <TrendingDown size={18}/>}</div><div className="min-w-0"><div className="truncate text-sm font-bold">{transaction.description || 'Tanpa keterangan'}</div><div className="text-xs text-slate-400">{transaction.category?.name || 'Tanpa kategori'} · {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${transaction.transaction_date}T00:00:00`))}</div></div></div><div className={`whitespace-nowrap text-sm font-extrabold ${income ? 'text-emerald-600' : 'text-rose-600'}`}>{income ? '+' : '-'}{formatIDR(Number(transaction.amount))}</div></div>
+  const date = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${transaction.transaction_date}T00:00:00`))
+  return <div className="flex items-center justify-between gap-3 py-4"><div className="flex min-w-0 items-center gap-3"><div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${income ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{income ? <TrendingUp size={18}/> : <TrendingDown size={18}/>}</div><div className="min-w-0"><div className="truncate text-sm font-bold">{transaction.description || 'Tanpa keterangan'}</div><div className="text-xs text-slate-400">{transaction.category?.name || 'Tanpa kategori'} · {date}</div></div></div><div className={`whitespace-nowrap text-sm font-extrabold ${income ? 'text-emerald-600' : 'text-rose-600'}`}>{income ? '+' : '-'}{formatIDR(Number(transaction.amount))}</div></div>
 }
 
-function MobileNav({ label, path, Icon, activeLabel, onClick }) { return <button onClick={() => onClick(path)} className={`grid place-items-center text-[10px] font-semibold ${activeLabel === label ? 'text-blue-600' : 'text-slate-400'}`}><Icon size={20}/>{label}</button> }
+function MobileNav({ label, path, Icon, activeLabel, onClick }) {
+  return <button onClick={() => onClick(path)} className={`grid place-items-center text-[10px] font-semibold ${activeLabel === label ? 'text-blue-600' : 'text-slate-400'}`}><Icon size={20}/>{label}</button>
+}
