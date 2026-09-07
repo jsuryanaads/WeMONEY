@@ -24,7 +24,7 @@ export default function AppShell({ title, children }) {
   const go = path => { setOpen(false); navigate(path) }
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
-  return <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-800 transition-colors duration-200 lg:pl-64">
+  return <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-800 transition-colors duration-200 lg:pl-72">
     <aside className={`${open ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] border-r border-slate-200 bg-white p-4 transition-transform duration-200 sm:p-5 lg:translate-x-0`}>
       <div className="mb-6 flex items-start justify-between"><div className="min-w-0"><div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/20"><WalletCards size={23}/></div><div className="truncate text-2xl font-extrabold tracking-tight text-slate-900">We<span className="text-blue-600">Money</span></div><p className="max-w-[14rem] text-[11px] leading-4 text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p></div><button className="ml-2 shrink-0 rounded-lg p-2 hover:bg-slate-100 lg:hidden" onClick={() => setOpen(false)} aria-label="Tutup menu"><X size={20}/></button></div>
       <nav className="space-y-1">{items.map(([label,path,Icon]) => <button key={path} onClick={() => go(path)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all duration-150 sm:px-4 ${location.pathname === path ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}><Icon size={19}/>{label}</button>)}</nav>
