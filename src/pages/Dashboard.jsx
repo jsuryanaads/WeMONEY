@@ -8,101 +8,19 @@ const nav = [
   ['Dashboard', '/dashboard', LayoutDashboard],
   ['Transaksi', '/transaksi', CreditCard],
   ['Kategori', '/kategori', Tags],
+  ['Dompet', '/dompet', Wallet],
   ['Laporan', '/laporan', BarChart3],
   ['Pengaturan', '/pengaturan', Settings],
 ]
-
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
-
-function getRange(period, month) {
-  const now = new Date()
-  const iso = d => d.toISOString().slice(0, 10)
-  if (period === 'week') {
-    const start = new Date(now)
-    start.setDate(now.getDate() - 6)
-    return [iso(start), iso(now)]
-  }
-  if (period === 'year') return [`${now.getFullYear()}-01-01`, `${now.getFullYear()}-12-31`]
-  return [iso(new Date(now.getFullYear(), month, 1)), iso(new Date(now.getFullYear(), month + 1, 0))]
-}
-
+function getRange(period, month) { const now = new Date(); const iso = d => d.toISOString().slice(0, 10); if (period === 'week') { const start = new Date(now); start.setDate(now.getDate() - 6); return [iso(start), iso(now)] } if (period === 'year') return [`${now.getFullYear()}-01-01`, `${now.getFullYear()}-12-31`]; return [iso(new Date(now.getFullYear(), month, 1)), iso(new Date(now.getFullYear(), month + 1, 0))] }
 export default function Dashboard() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const [period, setPeriod] = useState('month')
-  const [month, setMonth] = useState(new Date().getMonth())
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [startDate, endDate] = useMemo(() => getRange(period, month), [period, month])
-
-  useEffect(() => {
-    let active = true
-    async function load() {
-      if (!user?.id) return
-      setLoading(true)
-      setError('')
-      try {
-        const data = await getTransactionsForPeriod(user.id, startDate, endDate)
-        if (active) setRows(data)
-      } catch (err) {
-        if (active) setError(err.message || 'Gagal memuat transaksi.')
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    load()
-    return () => { active = false }
-  }, [user?.id, startDate, endDate])
-
-  const totals = useMemo(() => rows.reduce((result, tx) => {
-    result[tx.type] += Number(tx.amount)
-    return result
-  }, { income: 0, expense: 0 }), [rows])
-
-  const categories = useMemo(() => {
-    const grouped = {}
-    rows.filter(tx => tx.type === 'expense').forEach(tx => {
-      const key = tx.category?.name || 'Tanpa kategori'
-      grouped[key] = (grouped[key] || 0) + Number(tx.amount)
-    })
-    const total = totals.expense || 0
-    return Object.entries(grouped).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, amount]) => ({ name, percent: Math.round(amount / total * 100) }))
-  }, [rows, totals.expense])
-
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Pengguna'
-  const today = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 lg:pl-64">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white p-5 lg:block">
-        <div className="mb-8"><div className="text-2xl font-extrabold text-slate-900">We<span className="text-blue-600">Money</span></div><p className="text-xs text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p></div>
-        <nav className="space-y-1">{nav.map(([label, path, Icon]) => <button key={path} onClick={() => navigate(path)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${path === '/dashboard' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}><Icon size={19}/>{label}</button>)}</nav>
-        <div className="absolute bottom-5 text-xs text-slate-400">WeMoney V1<br/>© 2026 Created Jsuryana</div>
-      </aside>
-
-      <header className="sticky top-0 z-20 flex h-16 items-center justify-end border-b border-slate-200 bg-white px-4 lg:px-8"><button onClick={() => navigate('/pengaturan')} className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 font-bold text-blue-700">{displayName.slice(0, 2).toUpperCase()}</span><span className="hidden text-sm font-bold sm:block">{displayName}</span></button></header>
-
-      <main className="mx-auto max-w-7xl p-4 pb-24 lg:p-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm text-slate-500">{today}</p><h1 className="mt-1 text-2xl font-extrabold text-slate-900">Selamat datang kembali 👋</h1><p className="text-sm text-slate-500">Pantau kondisi keuanganmu hari ini.</p></div><button onClick={() => navigate('/transaksi')} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20"><Plus size={18}/>Tambah Transaksi</button></div>
-
-        <div className="mb-6 flex gap-2 overflow-x-auto">{[['month','Bulan Ini'],['week','Minggu Ini'],['year','Tahun Ini']].map(([key,label]) => <button key={key} onClick={() => setPeriod(key)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${period === key ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}>{label}</button>)}{period === 'month' && <select value={month} onChange={e => setMonth(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-3 text-sm"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option></select>}</div>
-
-        {error && <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Card title="Total Pemasukan" value={totals.income} icon={TrendingUp} tone="emerald" loading={loading}/><Card title="Total Pengeluaran" value={totals.expense} icon={TrendingDown} tone="rose" loading={loading}/><Card title="Saldo" value={totals.income - totals.expense} icon={Wallet} tone="blue" loading={loading}/></section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-2"><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h2 className="font-bold">Ringkasan Pengeluaran</h2><p className="mt-1 text-xs text-slate-400">Berdasarkan data Supabase</p><div className="mt-5 space-y-4">{!loading && categories.length === 0 && <p className="text-sm text-slate-400">Belum ada pengeluaran.</p>}{categories.map(item => <div key={item.name}><div className="mb-2 flex justify-between text-sm"><span>{item.name}</span><span className="font-semibold">{item.percent}%</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-blue-600" style={{width: `${item.percent}%`}}/></div></div>)}</div></div><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h2 className="font-bold">Transaksi Terbaru</h2><p className="mt-1 text-xs text-slate-400">Periode aktif</p><div className="mt-4 divide-y divide-slate-100">{!loading && rows.length === 0 && <p className="py-8 text-sm text-slate-400">Belum ada transaksi.</p>}{rows.slice(0,5).map(tx => <div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold">{tx.description || 'Tanpa keterangan'}</p><p className="text-xs text-slate-400">{tx.category?.name || 'Tanpa kategori'} · {tx.transaction_date}</p></div><span className={`whitespace-nowrap text-sm font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>{tx.type === 'income' ? '+' : '-'}{money(Number(tx.amount))}</span></div>)}</div></div></section>
-      </main>
-
-      <nav className="fixed bottom-0 left-0 right-0 z-30 grid h-16 grid-cols-5 border-t border-slate-200 bg-white lg:hidden"><Mobile label="Dashboard" path="/dashboard" icon={LayoutDashboard} onClick={navigate}/><Mobile label="Transaksi" path="/transaksi" icon={CreditCard} onClick={navigate}/><button onClick={() => navigate('/transaksi')} className="-mt-5 mx-auto grid h-14 w-14 place-items-center rounded-full bg-blue-600 text-white shadow-xl"><Plus/></button><Mobile label="Laporan" path="/laporan" icon={BarChart3} onClick={navigate}/><Mobile label="Pengaturan" path="/pengaturan" icon={Settings} onClick={navigate}/></nav>
-    </div>
-  )
+  const { user } = useAuth(); const navigate = useNavigate(); const [period,setPeriod]=useState('month'); const [month,setMonth]=useState(new Date().getMonth()); const [rows,setRows]=useState([]); const [loading,setLoading]=useState(true); const [error,setError]=useState(''); const [startDate,endDate]=useMemo(()=>getRange(period,month),[period,month])
+  useEffect(()=>{let active=true;async function load(){if(!user?.id)return;setLoading(true);setError('');try{const data=await getTransactionsForPeriod(user.id,startDate,endDate);if(active)setRows(data)}catch(err){if(active)setError(err.message||'Gagal memuat transaksi.')}finally{if(active)setLoading(false)}}load();return()=>{active=false}},[user?.id,startDate,endDate])
+  const totals=useMemo(()=>rows.reduce((r,tx)=>{r[tx.type]+=Number(tx.amount);return r},{income:0,expense:0}),[rows])
+  const categories=useMemo(()=>{const grouped={};rows.filter(tx=>tx.type==='expense').forEach(tx=>{const key=tx.category?.name||'Tanpa kategori';grouped[key]=(grouped[key]||0)+Number(tx.amount)});const total=totals.expense||0;return Object.entries(grouped).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,amount])=>({name,percent:total?Math.round(amount/total*100):0}))},[rows,totals.expense])
+  const displayName=user?.user_metadata?.full_name||user?.email?.split('@')[0]||'Pengguna'; const today=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date())
+  return <div className="min-h-screen bg-slate-50 text-slate-800 lg:pl-64"><aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white p-5 lg:block"><div className="mb-8"><div className="text-2xl font-extrabold text-slate-900">We<span className="text-blue-600">Money</span></div><p className="text-xs text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p></div><nav className="space-y-1">{nav.map(([label,path,Icon])=><button key={path} onClick={()=>navigate(path)} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${path==='/dashboard'?'bg-blue-600 text-white':'text-slate-500 hover:bg-slate-100'}`}><Icon size={19}/>{label}</button>)}</nav><div className="absolute bottom-5 text-xs text-slate-400">WeMoney V1<br/>© 2026 Created Jsuryana</div></aside><header className="sticky top-0 z-20 flex h-16 items-center justify-end border-b border-slate-200 bg-white px-4 lg:px-8"><button onClick={()=>navigate('/pengaturan')} className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 font-bold text-blue-700">{displayName.slice(0,2).toUpperCase()}</span><span className="hidden text-sm font-bold sm:block">{displayName}</span></button></header><main className="mx-auto max-w-7xl p-4 pb-24 lg:p-8"><div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm text-slate-500">{today}</p><h1 className="mt-1 text-2xl font-extrabold text-slate-900">Selamat datang kembali 👋</h1><p className="text-sm text-slate-500">Pantau kondisi keuanganmu hari ini.</p></div><button onClick={()=>navigate('/transaksi')} className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20"><Plus size={18}/>Tambah Transaksi</button></div><div className="mb-6 flex gap-2 overflow-x-auto">{[['month','Bulan Ini'],['week','Minggu Ini'],['year','Tahun Ini']].map(([key,label])=><button key={key} onClick={()=>setPeriod(key)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${period===key?'bg-blue-600 text-white':'bg-white text-slate-500 ring-1 ring-slate-200'}`}>{label}</button>)}{period==='month'&&<select value={month} onChange={e=>setMonth(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-3 text-sm">{['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m,i)=><option key={m} value={i}>{m}</option>)}</select>}</div>{error&&<div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}<section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Card title="Total Pemasukan" value={totals.income} icon={TrendingUp} tone="emerald" loading={loading}/><Card title="Total Pengeluaran" value={totals.expense} icon={TrendingDown} tone="rose" loading={loading}/><Card title="Saldo" value={totals.income-totals.expense} icon={Wallet} tone="blue" loading={loading}/></section><section className="mt-6 grid gap-6 lg:grid-cols-2"><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h2 className="font-bold">Ringkasan Pengeluaran</h2><p className="mt-1 text-xs text-slate-400">Berdasarkan data Supabase</p><div className="mt-5 space-y-4">{!loading&&!categories.length&&<p className="text-sm text-slate-400">Belum ada pengeluaran.</p>}{categories.map(item=><div key={item.name}><div className="mb-2 flex justify-between text-sm"><span>{item.name}</span><span className="font-semibold">{item.percent}%</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-blue-600" style={{width:`${item.percent}%`}}/></div></div>)}</div></div><div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h2 className="font-bold">Transaksi Terbaru</h2><p className="mt-1 text-xs text-slate-400">Periode aktif</p><div className="mt-4 divide-y divide-slate-100">{!loading&&!rows.length&&<p className="py-8 text-sm text-slate-400">Belum ada transaksi.</p>}{rows.slice(0,5).map(tx=><div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold">{tx.description||'Tanpa keterangan'}</p><p className="text-xs text-slate-400">{tx.category?.name||'Tanpa kategori'} · {tx.transaction_date}</p></div><span className={`whitespace-nowrap text-sm font-bold ${tx.type==='income'?'text-emerald-600':'text-rose-600'}`}>{tx.type==='income'?'+':'-'}{money(Number(tx.amount))}</span></div>)}</div></div></section></main><nav className="fixed bottom-0 left-0 right-0 z-30 grid h-16 grid-cols-5 border-t border-slate-200 bg-white lg:hidden"><Mobile label="Dashboard" path="/dashboard" icon={LayoutDashboard} onClick={navigate}/><Mobile label="Transaksi" path="/transaksi" icon={CreditCard} onClick={navigate}/><button onClick={()=>navigate('/transaksi')} className="-mt-5 mx-auto grid h-14 w-14 place-items-center rounded-full bg-blue-600 text-white shadow-xl"><Plus/></button><Mobile label="Laporan" path="/laporan" icon={BarChart3} onClick={navigate}/><Mobile label="Pengaturan" path="/pengaturan" icon={Settings} onClick={navigate}/></nav></div>
 }
-
-function Card({ title, value, icon: Icon, tone, loading }) {
-  const tones = { blue: 'bg-blue-50 text-blue-600', emerald: 'bg-emerald-50 text-emerald-600', rose: 'bg-rose-50 text-rose-600' }
-  return <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="flex items-start justify-between"><div><p className="text-sm text-slate-500">{title}</p><p className="mt-2 text-2xl font-extrabold">{loading ? 'Memuat...' : money(value)}</p></div><div className={`grid h-11 w-11 place-items-center rounded-xl ${tones[tone]}`}><Icon size={21}/></div></div></div>
-}
-
-function Mobile({ label, path, icon: Icon, onClick }) { return <button onClick={() => onClick(path)} className="grid place-items-center text-[10px] font-semibold text-slate-500"><Icon size={20}/>{label}</button> }
+function Card({title,value,icon:Icon,tone,loading}){const tones={blue:'bg-blue-50 text-blue-600',emerald:'bg-emerald-50 text-emerald-600',rose:'bg-rose-50 text-rose-600'};return <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="flex items-start justify-between"><div><p className="text-sm text-slate-500">{title}</p><p className="mt-2 text-2xl font-extrabold">{loading?'Memuat...':money(value)}</p></div><div className={`grid h-11 w-11 place-items-center rounded-xl ${tones[tone]}`}><Icon size={21}/></div></div></div>}
+function Mobile({label,path,icon:Icon,onClick}){return <button onClick={()=>onClick(path)} className="grid place-items-center text-[10px] font-semibold text-slate-500"><Icon size={20}/>{label}</button>}
