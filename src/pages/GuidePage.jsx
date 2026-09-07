@@ -1,0 +1,31 @@
+import { useState } from 'react'
+import { BookOpen, ChevronDown, HelpCircle, Wallet, ArrowRightLeft, ShieldCheck } from 'lucide-react'
+import AppShell from '../components/layout/AppShell'
+
+const faqs = [
+  ['Mengapa saldo dompet berubah?', 'Saldo dompet dihitung dari saldo awal ditambah pemasukan, dikurangi pengeluaran, lalu disesuaikan dengan transfer masuk dan keluar.'],
+  ['Apakah transfer dihitung sebagai pengeluaran?', 'Tidak. Transfer hanya memindahkan uang antar dompet sehingga total saldo semua dompet tetap sama.'],
+  ['Apa yang terjadi jika transaksi dihapus?', 'Nilai transaksi langsung dikeluarkan dari perhitungan saldo dan laporan.'],
+  ['Apa fungsi Reset Data Keuangan?', 'Reset menghapus seluruh transaksi dan transfer milik akun serta mengembalikan saldo awal semua dompet menjadi Rp 0. Dompet dan kategori tetap dipertahankan. Tindakan ini tidak dapat dibatalkan.'],
+  ['Apakah data pengguna lain dapat terlihat?', 'Tidak. Data keuangan dipisahkan berdasarkan user_id dan dilindungi Row Level Security di Supabase.'],
+]
+
+export default function GuidePage() {
+  const [open, setOpen] = useState(0)
+  return <AppShell title="Panduan WeMoney">
+    <div className="grid gap-6 lg:grid-cols-[1.3fr_.7fr]">
+      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="flex items-start gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><BookOpen size={24}/></span><div><h2 className="text-xl font-extrabold">Mulai menggunakan WeMoney</h2><p className="mt-1 text-sm text-slate-500">Catat Uangmu, Rencanakan Masa Depanmu.</p></div></div>
+        <div className="mt-6 space-y-4">
+          <Step icon={<Wallet size={19}/>} title="1. Siapkan dompet" text="Buat dompet seperti Kas, Bank, atau E-Wallet dan masukkan saldo awal yang benar." />
+          <Step icon={<ArrowRightLeft size={19}/>} title="2. Catat transaksi" text="Pilih jenis pemasukan atau pengeluaran, dompet, kategori, nominal, dan tanggal." />
+          <Step icon={<ArrowRightLeft size={19}/>} title="3. Gunakan transfer" text="Gunakan Transfer saat uang berpindah antar dompet. Transfer tidak memengaruhi total kekayaan." />
+          <Step icon={<ShieldCheck size={19}/>} title="4. Kelola data dengan aman" text="Gunakan Export Data sebelum melakukan reset. Reset bersifat permanen untuk data keuangan." />
+        </div>
+      </section>
+      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"><div className="flex items-center gap-3"><HelpCircle className="text-blue-600"/><h2 className="font-extrabold">FAQ</h2></div><div className="mt-4 divide-y divide-slate-100">{faqs.map(([q,a],i)=><div key={q} className="py-3"><button className="flex w-full items-center justify-between gap-3 text-left text-sm font-bold" onClick={()=>setOpen(open===i?-1:i)}>{q}<ChevronDown size={17} className={open===i?'rotate-180':''}/></button>{open===i&&<p className="mt-2 text-sm leading-6 text-slate-500">{a}</p>}</div>)}</div></section>
+    </div>
+  </AppShell>
+}
+
+function Step({icon,title,text}) { return <div className="flex gap-4 rounded-xl bg-slate-50 p-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-blue-600 ring-1 ring-slate-200">{icon}</span><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-500">{text}</p></div></div> }
