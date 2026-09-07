@@ -1,4 +1,6 @@
-# WeMoney V1
+# WeMoney
+
+**Versi: V1.2.1 r1**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
@@ -28,8 +30,6 @@ npm run build
 
 ## Status
 
-Phase 1: frontend foundation and responsive dashboard mockup.
-
-Next: Supabase Auth, PostgreSQL schema, RLS, real transactions, reports, and settings.
+V1.2.1 r1 — aplikasi menggunakan Supabase untuk autentikasi dan data keuangan, dengan dashboard, transaksi, kategori, dompet, transfer, laporan, pengaturan, export CSV, reset data, bantuan, dan RLS.
 
 © 2026 Created Jsuryana
