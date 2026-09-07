@@ -18,7 +18,7 @@ function PublicOnly({ children }) {
 
 export default function App() {
   return <Routes>
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/" element={<PublicOnly><Login /></PublicOnly>} />
     <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
     <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
     <Route path="/forgot-password" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
