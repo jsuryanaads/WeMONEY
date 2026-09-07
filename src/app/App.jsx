@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
 import Dashboard from '../pages/Dashboard'
 import FinancePage from '../pages/FinancePage'
+import SettingsPage from '../pages/SettingsPage'
+import GuidePage from '../pages/GuidePage'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import ForgotPassword from '../pages/ForgotPassword'
@@ -27,7 +29,8 @@ export default function App() {
       <Route path="/kategori" element={<FinancePage section="kategori" />} />
       <Route path="/dompet" element={<FinancePage section="dompet" />} />
       <Route path="/laporan" element={<FinancePage section="laporan" />} />
-      <Route path="/pengaturan" element={<FinancePage section="pengaturan" />} />
+      <Route path="/pengaturan" element={<SettingsPage />} />
+      <Route path="/panduan" element={<GuidePage />} />
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Routes>
