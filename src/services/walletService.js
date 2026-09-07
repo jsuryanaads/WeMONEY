@@ -33,8 +33,14 @@ export async function getWalletBalances(userId) {
   if (t.error) throw t.error
   if (x.error) throw x.error
   const balances = Object.fromEntries((w.data ?? []).map(row => [row.id, Number(row.initial_balance)]))
-  for (const row of t.data ?? []) if (row.wallet_id) balances[row.wallet_id] += row.type === 'income' ? Number(row.amount) : -Number(row.amount)
-  for (const row of x.data ?? []) { balances[row.source_wallet_id] -= Number(row.amount); balances[row.destination_wallet_id] += Number(row.amount) }
+  for (const row of t.data ?? []) {
+    if (!row.wallet_id || balances[row.wallet_id] === undefined) continue
+    balances[row.wallet_id] += row.type === 'income' ? Number(row.amount) : -Number(row.amount)
+  }
+  for (const row of x.data ?? []) {
+    if (balances[row.source_wallet_id] !== undefined) balances[row.source_wallet_id] -= Number(row.amount)
+    if (balances[row.destination_wallet_id] !== undefined) balances[row.destination_wallet_id] += Number(row.amount)
+  }
   return (w.data ?? []).map(row => ({ ...row, balance: balances[row.id] ?? 0 }))
 }
 
