@@ -6,6 +6,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
         <div className="bg-slate-900 px-6 py-8 text-white sm:px-8">
           <div className="text-2xl font-extrabold tracking-tight">We<span className="text-blue-400">Money</span></div>
           <p className="mt-1 text-xs text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p>
+          <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">V1.2.1 r1</p>
         </div>
         <div className="px-6 py-7 sm:px-8">
           <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
@@ -14,7 +15,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
           {footer && <div className="mt-6 text-center text-sm text-slate-500">{footer}</div>}
         </div>
       </section>
-      <p className="mx-auto mt-5 max-w-md text-center text-xs text-slate-500">WeMoney V1 | © {year} Created Jsuryana</p>
+      <p className="mx-auto mt-5 max-w-md text-center text-xs text-slate-500">WeMoney | V1.2.1 r1 | © {year} Created Jsuryana</p>
     </main>
   )
 }
