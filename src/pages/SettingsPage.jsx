@@ -4,7 +4,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { signOut } from '../services/authService'
-import { deleteMyAccount, exportTransactionsCsv, getDataStats, resetFinancialData } from '../services/dataService'
+import { exportTransactionsCsv, getDataStats, requestAccountDeletion, resetFinancialData } from '../services/dataService'
 
 const input = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'
 const button = 'rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
@@ -13,14 +13,22 @@ export default function SettingsPage() {
   const { user } = useAuth()
   const [name, setName] = useState(user?.user_metadata?.full_name || '')
   const [stats, setStats] = useState(null)
+  const [deleteRequest, setDeleteRequest] = useState(null)
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(null)
   const [resetText, setResetText] = useState('')
-  const [deleteText, setDeleteText] = useState('')
+  const [requestText, setRequestText] = useState('')
 
-  const loadStats = async () => { try { setStats(await getDataStats()) } catch (e) { setError(e.message) } }
+  const loadStats = async () => {
+    try {
+      setStats(await getDataStats())
+      const { data, error: requestError } = await supabase.from('account_deletion_requests').select('id,status,requested_at,reviewed_at,admin_note').eq('user_id', user.id).maybeSingle()
+      if (requestError) throw requestError
+      setDeleteRequest(data)
+    } catch (e) { setError(e.message) }
+  }
   useEffect(() => { if (user?.id) loadStats() }, [user?.id])
 
   async function save(e) {
@@ -40,20 +48,25 @@ export default function SettingsPage() {
   async function resetData() {
     if (resetText !== 'RESET') return
     setError(''); setBusy(true)
-    try { await resetFinancialData(); setResetText(''); setModal(null); await loadStats(); window.alert('Data keuangan berhasil di-reset.') }
+    try { await resetFinancialData(); setResetText(''); setModal(null); await loadStats(); window.alert('Data keuangan berhasil di-reset. Dompet dan kategori masih harus dihapus jika ingin mengajukan penghapusan akun.') }
     catch (e) { setError(e.message) } finally { setBusy(false) }
   }
 
-  async function deleteAccount() {
-    if (deleteText !== 'HAPUS AKUN') return
+  async function submitDeletionRequest() {
+    if (requestText !== 'AJUKAN HAPUS') return
     setError(''); setBusy(true)
-    try { await deleteMyAccount(); await supabase.auth.signOut(); window.location.replace(`${import.meta.env.BASE_URL}login`) }
-    catch (e) { setError(e.message); setBusy(false) }
+    try {
+      await requestAccountDeletion()
+      setRequestText('')
+      setModal(null)
+      await loadStats()
+      window.alert('Pengajuan penghapusan akun berhasil dikirim ke administrator. Akun tidak dihapus otomatis.')
+    } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
 
   function closeModal() {
     if (busy) return
-    setModal(null); setResetText(''); setDeleteText('')
+    setModal(null); setResetText(''); setRequestText('')
   }
 
   return <AppShell title="Pengaturan">
@@ -65,7 +78,8 @@ export default function SettingsPage() {
       <SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} />
       <SettingItem icon={Download} title="Export" description="Backup transaksi ke CSV" onClick={exportData} disabled={busy} />
       <SettingItem icon={Database} title="Reset Data" description="Kosongkan transaksi tanpa menghapus akun" onClick={() => setModal('reset')} />
-      <SettingItem icon={UserX} title="Hapus Data" description="Hapus akun dan seluruh data permanen" danger onClick={() => setModal('delete')} />
+      <SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} />
+      {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
       <SettingItem icon={BookOpen} title="Bantuan" description="Panduan singkat penggunaan WeMoney" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}panduan` }} />
 
       <div className="pt-2 text-center"><button onClick={() => signOut()} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-50"><LogOut size={17}/>Keluar</button><p className="mt-2 text-xs text-slate-400">WeMoney V1 | © {new Date().getFullYear()} Created Jsuryana</p></div>
@@ -76,11 +90,16 @@ export default function SettingsPage() {
     </Modal>}
 
     {modal === 'reset' && <Modal title="Reset Data" icon={Database} danger onClose={closeModal}>
-      <div className="rounded-xl bg-rose-50 p-4"><p className="text-sm leading-6 text-rose-700">Transaksi dan transfer akan dihapus. Dompet dan kategori tetap.</p><label className="mt-3 block text-xs font-bold text-rose-700">Ketik RESET<input autoFocus className={`${input} border-rose-200`} value={resetText} onChange={e=>setResetText(e.target.value.toUpperCase())} placeholder="RESET" /></label><button disabled={busy || resetText!=='RESET'} onClick={resetData} className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><Trash2 size={17} className="mr-1 inline"/>Reset Data</button></div>
+      <div className="rounded-xl bg-rose-50 p-4"><p className="text-sm leading-6 text-rose-700">Transaksi dan transfer akan dihapus. Dompet dan kategori tetap. Jika tujuan Anda adalah menghapus akun, setelah reset Anda tetap harus menghapus dompet dan kategori serta memastikan semua data tambahan kosong.</p><label className="mt-3 block text-xs font-bold text-rose-700">Ketik RESET<input autoFocus className={`${input} border-rose-200`} value={resetText} onChange={e=>setResetText(e.target.value.toUpperCase())} placeholder="RESET" /></label><button disabled={busy || resetText!=='RESET'} onClick={resetData} className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><Trash2 size={17} className="mr-1 inline"/>Reset Data</button></div>
     </Modal>}
 
-    {modal === 'delete' && <Modal title="Hapus Data" icon={UserX} danger onClose={closeModal}>
-      <div className="rounded-xl bg-red-50 p-4"><p className="text-sm leading-6 text-red-700">Akun dan seluruh data terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.</p><label className="mt-3 block text-xs font-bold text-red-700">Ketik HAPUS AKUN<input autoFocus className={`${input} border-red-200`} value={deleteText} onChange={e=>setDeleteText(e.target.value.toUpperCase())} placeholder="HAPUS AKUN" /></label><button disabled={busy || deleteText!=='HAPUS AKUN'} onClick={deleteAccount} className="mt-3 w-full rounded-xl bg-red-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><UserX size={17} className="mr-1 inline"/>Hapus Akun Permanen</button></div>
+    {modal === 'delete-request' && <Modal title="Ajukan Penghapusan Akun" icon={AlertTriangle} danger onClose={closeModal}>
+      <div className="space-y-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="font-extrabold text-red-800">PERINGATAN — jangan ajukan sebelum akun benar-benar kosong.</p><p className="mt-2 text-sm leading-6 text-red-700">Pengajuan hanya dapat diproses jika seluruh data keuangan sudah kosong: transaksi, transfer, dompet, kategori, anggaran, struk, dan transaksi berulang. Data yang masih tersisa akan membuat pengajuan ditolak oleh sistem.</p></div>
+        <div className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600"><p className="font-bold text-slate-800">Urutan yang disarankan:</p><ol className="mt-2 list-decimal space-y-1 pl-5"><li>Export/backup data jika masih diperlukan.</li><li>Gunakan Reset Data untuk menghapus transaksi dan transfer.</li><li>Hapus seluruh dompet dan kategori yang tersisa.</li><li>Pastikan anggaran, struk, dan transaksi berulang juga kosong.</li><li>Baru kirim pengajuan kepada administrator.</li></ol></div>
+        <label className="block text-xs font-bold text-red-700">Ketik AJUKAN HAPUS untuk menyatakan Anda sudah memahami peringatan<input autoFocus className={`${input} border-red-200`} value={requestText} onChange={e=>setRequestText(e.target.value.toUpperCase())} placeholder="AJUKAN HAPUS" /></label>
+        <button disabled={busy || requestText!=='AJUKAN HAPUS'} onClick={submitDeletionRequest} className="w-full rounded-xl bg-red-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><UserX size={17} className="mr-1 inline"/>Kirim Pengajuan ke Administrator</button>
+      </div>
     </Modal>}
   </AppShell>
 }
