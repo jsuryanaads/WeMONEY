@@ -5,6 +5,7 @@ import Dashboard from '../pages/Dashboard'
 import TransactionsPage from '../pages/TransactionsPageOCR'
 import FinancePage from '../pages/FinancePage'
 import WalletsPage from '../pages/WalletsPage'
+import ReportsPage from '../pages/ReportsPage'
 import SettingsPage from '../pages/SettingsPage'
 import GuidePage from '../pages/GuidePage'
 import Login from '../pages/Login'
@@ -14,7 +15,7 @@ import ResetPassword from '../pages/ResetPassword'
 
 function PublicOnly({ children }) {
   const { session, loading } = useAuth()
-  if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Memuat WeMoney...</div>
+  if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Memuat We MONEY...</div>
   return session ? <Navigate to="/dashboard" replace /> : children
 }
 
@@ -30,7 +31,7 @@ export default function App() {
       <Route path="/transaksi" element={<TransactionsPage />} />
       <Route path="/kategori" element={<FinancePage section="kategori" />} />
       <Route path="/dompet" element={<WalletsPage />} />
-      <Route path="/laporan" element={<FinancePage section="laporan" />} />
+      <Route path="/laporan" element={<ReportsPage />} />
       <Route path="/pengaturan" element={<SettingsPage />} />
       <Route path="/panduan" element={<GuidePage />} />
     </Route>
