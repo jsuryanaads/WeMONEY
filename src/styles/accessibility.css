@@ -5,3 +5,19 @@ button:disabled,[aria-disabled="true"]{cursor:not-allowed}
 html{scroll-behavior:smooth}
 @media(max-width:639px){button,a,input,select,textarea{font-size:16px}.wm-mobile-nav button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Dashboard mobile polish: financial figures stay single-line and controls never clip. */
+.wm-metric strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.wm-period-options{display:flex;gap:.45rem;min-width:0}
+.wm-period-options button{white-space:nowrap}
+.wm-period-month{min-width:0}
+@media(max-width:767px){
+  .wm-period-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:.45rem;overflow:visible;flex-wrap:initial}
+  .wm-period-options{display:contents}
+  .wm-period-options button{width:100%;min-width:0;padding-left:.55rem;padding-right:.55rem;overflow:hidden;text-overflow:ellipsis}
+  .wm-period-month{grid-column:1/-1;width:100%;min-width:0}
+  .wm-balance-grid .wm-metric:not(:first-child){flex-direction:column;gap:.55rem;padding:.85rem}
+  .wm-balance-grid .wm-metric:not(:first-child) .wm-metric-icon{width:36px;height:36px;border-radius:12px}
+  .wm-balance-grid .wm-metric:not(:first-child) strong{font-size:clamp(.9rem,4.3vw,1.1rem);letter-spacing:-.02em}
+  .wm-balance-grid .wm-metric:not(:first-child) small{font-size:.62rem}
+}
