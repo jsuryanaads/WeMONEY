@@ -1,0 +1,79 @@
+/* We MONEY Typography System — one family, predictable hierarchy, finance-friendly numerals. */
+:root {
+  --wm-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --wm-font-size-body: 0.875rem;
+  --wm-font-line-body: 1.5;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--wm-font-sans);
+}
+
+body {
+  font-size: var(--wm-font-size-body);
+  line-height: var(--wm-font-line-body);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+label,
+button,
+input,
+select,
+textarea {
+  margin-block-start: 0;
+}
+
+/* Explicit typography primitives for pages/components that need semantic consistency. */
+.wm-type-display { font-size: clamp(1.75rem, 4vw, 2rem); line-height: 1.15; font-weight: 800; letter-spacing: -0.025em; }
+.wm-type-h1 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; }
+.wm-type-h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 700; letter-spacing: -0.015em; }
+.wm-type-h3 { font-size: 1rem; line-height: 1.4; font-weight: 700; }
+.wm-type-body { font-size: 0.875rem; line-height: 1.5; font-weight: 400; }
+.wm-type-body-strong { font-size: 0.875rem; line-height: 1.5; font-weight: 600; }
+.wm-type-label { font-size: 0.75rem; line-height: 1.35; font-weight: 600; }
+.wm-type-caption { font-size: 0.6875rem; line-height: 1.4; font-weight: 400; }
+
+/* Financial values: consistent glyph widths make balances and reports easier to scan. */
+.wm-money,
+.wm-number,
+input[type="number"],
+input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
+}
+
+.wm-money { font-weight: 800; letter-spacing: -0.015em; }
+.wm-number { font-weight: 700; }
+
+/* Keep compact mobile UI readable without allowing long labels to break the layout. */
+.wm-type-display,
+.wm-type-h1,
+.wm-type-h2,
+.wm-type-h3,
+.wm-type-body,
+.wm-type-body-strong,
+.wm-type-label,
+.wm-type-caption,
+.wm-money,
+.wm-number {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .wm-type-display { font-size: 1.625rem; }
+  .wm-type-h1 { font-size: 1.375rem; }
+  .wm-type-h2 { font-size: 1.125rem; }
+}
