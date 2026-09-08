@@ -9,7 +9,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
       <div className="relative z-10 w-full max-w-md">
         <section className="overflow-hidden rounded-[1.75rem] border border-slate-800/80 bg-slate-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl">
           <header className="px-6 pb-7 pt-8 text-center sm:px-8 sm:pt-9">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-800/80 p-0.5 shadow-lg shadow-blue-600/10">
               <WeMoneyLogo size={64} />
             </div>
             <div className="text-2xl font-extrabold tracking-tight text-white">We<span className="text-blue-400">MONEY</span></div>
