@@ -73,7 +73,7 @@ export default function SettingsPage() {
 
   return <AppShell title="Pengaturan">
     <div className="mx-auto max-w-3xl space-y-4 sm:space-y-5">
-      <div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Pengaturan</h2><p className="mt-1 text-sm text-slate-500">Kelola akun dan data WeMoney.</p></div>
+      <div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Pengaturan</h2><p className="mt-1 text-sm text-slate-500">Kelola akun dan data We MONEY.</p></div>
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</div>}
       {stats && <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">{statItems.map(([label,key]) => <div key={key} className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-0.5 text-lg font-extrabold text-slate-900">{Number(stats[key]||0).toLocaleString('id-ID')}</p></div>)}</div>}
 
@@ -82,7 +82,7 @@ export default function SettingsPage() {
       <SettingItem icon={Database} title="Reset Data" description="Kosongkan transaksi tanpa menghapus akun" onClick={() => setModal('reset')} />
       <SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} />
       {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
-      <SettingItem icon={BookOpen} title="Bantuan" description="Panduan singkat penggunaan WeMoney" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}panduan` }} />
+      <SettingItem icon={BookOpen} title="Bantuan" description="Panduan singkat penggunaan We MONEY" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}panduan` }} />
 
       {stats && remaining.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Data masih tersimpan</p><p className="mt-1 leading-6">Pengajuan hapus akun belum dapat diproses. Selesaikan data berikut: {remaining.map(([label,key]) => `${label} (${Number(stats[key] || 0).toLocaleString('id-ID')})`).join(', ')}.</p></div>}
       {stats && remaining.length === 0 && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><p className="font-extrabold">Data keuangan kosong</p><p className="mt-1 leading-6">Akun sudah memenuhi pemeriksaan data untuk mengajukan penghapusan kepada administrator.</p></div>}
@@ -104,7 +104,7 @@ export default function SettingsPage() {
         <button disabled={busy || requestText!=='AJUKAN HAPUS'} onClick={submitDeletionRequest} className="w-full rounded-xl bg-red-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><UserX size={17} className="mr-1 inline"/>Kirim Pengajuan ke Administrator</button>
       </div>
     </Modal>}
-  </AppShell>
+  </div>
 }
 
 function SettingItem({ icon: Icon, title, description, onClick, danger = false, disabled = false }) {
