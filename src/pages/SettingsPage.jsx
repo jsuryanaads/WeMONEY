@@ -52,7 +52,7 @@ export default function SettingsPage() {
     try {
       await resetFinancialData()
       setResetText(''); setModal(null); await loadStats()
-      window.alert('Data keuangan berhasil di-reset. Dompet, kategori, anggaran, struk, dan transaksi berulang tidak ikut dihapus.')
+      window.alert('Reset selesai. Semua data keuangan dihapus, kecuali kategori dan akun pengguna.')
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
 
@@ -80,7 +80,7 @@ export default function SettingsPage() {
       {stats && <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">{statItems.map(([label, key]) => <div key={key} className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-0.5 text-lg font-extrabold text-slate-900">{Number(stats[key] || 0).toLocaleString('id-ID')}</p></div>)}</div>}
       <SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} />
       <SettingItem icon={Download} title="Export" description="Backup transaksi ke CSV" onClick={exportData} disabled={busy} />
-      <SettingItem icon={Database} title="Reset Data" description="Kosongkan transaksi tanpa menghapus akun" onClick={() => setModal('reset')} />
+      <SettingItem icon={Database} title="Reset Data" description="Hapus seluruh data keuangan, kategori dan akun tetap" onClick={() => setModal('reset')} />
       <SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} />
       {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
       <SettingItem icon={BookOpen} title="Bantuan" description="Panduan singkat penggunaan We MONEY" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}panduan` }} />
@@ -93,7 +93,7 @@ export default function SettingsPage() {
     </Modal>}
 
     {modal === 'reset' && <Modal title="Reset Data" icon={Database} danger onClose={closeModal}>
-      <div className="rounded-xl bg-rose-50 p-4"><p className="text-sm leading-6 text-rose-700">Transaksi dan transfer akan dihapus. Dompet, kategori, anggaran, struk, dan transaksi berulang tetap.</p><label className="mt-3 block text-xs font-bold text-rose-700">Ketik RESET<input autoFocus className={`${input} border-rose-200`} value={resetText} onChange={e => setResetText(e.target.value.toUpperCase())} placeholder="RESET" /></label><button disabled={busy || resetText !== 'RESET'} onClick={resetData} className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><Trash2 size={17} className="mr-1 inline" />Reset Data</button></div>
+      <div className="rounded-xl bg-rose-50 p-4"><p className="text-sm leading-6 text-rose-700">Semua data keuangan akan dihapus: transaksi, transfer, dompet, anggaran, struk, dan transaksi berulang. <strong>Kategori dan akun pengguna tetap dipertahankan.</strong></p><label className="mt-3 block text-xs font-bold text-rose-700">Ketik RESET<input autoFocus className={`${input} border-rose-200`} value={resetText} onChange={e => setResetText(e.target.value.toUpperCase())} placeholder="RESET" /></label><button disabled={busy || resetText !== 'RESET'} onClick={resetData} className="mt-3 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"><Trash2 size={17} className="mr-1 inline" />Reset Semua Data Keuangan</button></div>
     </Modal>}
 
     {modal === 'delete-request' && <Modal title="Ajukan Penghapusan Akun" icon={AlertTriangle} danger onClose={closeModal}>
