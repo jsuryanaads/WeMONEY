@@ -14,14 +14,29 @@ export async function getTransactions(userId, limit = 100) {
   return data ?? []
 }
 
+export async function getTransactionsPage(userId, { page = 1, pageSize = 10, search = '', type = 'all', walletId = 'all', categoryId = 'all', startDate = '', endDate = '' } = {}) {
+  const from = Math.max(0, (page - 1) * pageSize)
+  const to = from + pageSize - 1
+  let query = supabase.from('transactions').select(SELECT, { count: 'exact' }).eq('user_id', userId)
+  if (search.trim()) query = query.or(`description.ilike.%${search.trim()}%,notes.ilike.%${search.trim()}%`)
+  if (type !== 'all') query = query.eq('type', type)
+  if (walletId !== 'all') query = query.eq('wallet_id', walletId)
+  if (categoryId !== 'all') query = query.eq('category_id', categoryId)
+  if (startDate) query = query.gte('transaction_date', startDate)
+  if (endDate) query = query.lte('transaction_date', endDate)
+  const { data, error, count } = await query.order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).range(from, to)
+  if (error) throw error
+  return { data: data ?? [], count: count ?? 0, page, pageSize, totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)) }
+}
+
 export async function createTransaction(userId, payload) {
-  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount: Number(payload.amount), transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null }).select(SELECT).single()
+  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount: Number(payload.amount), transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, source: payload.source || 'manual', receipt_id: payload.receipt_id || null }).select(SELECT).single()
   if (error) throw error
   return data
 }
 
 export async function updateTransaction(id, userId, payload) {
-  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount: Number(payload.amount), transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
+  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount: Number(payload.amount), transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, receipt_id: payload.receipt_id || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
   if (error) throw error
   return data
 }
