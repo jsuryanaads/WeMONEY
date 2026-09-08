@@ -64,4 +64,10 @@ export async function getMyDevices() {
   return data ?? []
 }
 
+export async function revokeDevice(deviceId) {
+  const { error } = await supabase.rpc('revoke_my_device', { p_device_id: deviceId })
+  if (error) throw error
+  return true
+}
+
 export { DEVICE_KEY, DEVICE_NAME_KEY }
