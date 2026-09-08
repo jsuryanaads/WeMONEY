@@ -46,7 +46,6 @@ export async function restoreWallet(id, userId) {
 export async function deleteWallet(id, userId) {
   const { data: wallet, error: walletError } = await supabase.from('wallets').select('name').eq('id', id).eq('user_id', userId).single()
   if (walletError) throw walletError
-  if (wallet.name?.trim().toLowerCase() === 'kas utama') throw new Error('Kas Utama adalah dompet default dan tidak dapat dihapus.')
   const [transactions, transfersFrom, transfersTo] = await Promise.all([
     supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('wallet_id', id),
     supabase.from('transfers').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('source_wallet_id', id),
@@ -57,6 +56,10 @@ export async function deleteWallet(id, userId) {
   if (transfersTo.error) throw transfersTo.error
   const used = (transactions.count ?? 0) + (transfersFrom.count ?? 0) + (transfersTo.count ?? 0)
   if (used > 0) throw new Error(`Dompet masih memiliki ${used} transaksi/transfer. Arsipkan dompet agar riwayat tetap aman.`)
+  if (wallet.name?.trim().toLowerCase() === 'kas utama') {
+    // Kas Utama may be removed only when it is completely unused, which is
+    // required for the account-deletion workflow to be reachable.
+  }
   const { error } = await supabase.from('wallets').delete().eq('id', id).eq('user_id', userId)
   if (error) throw error
 }
