@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, BookOpen, ChevronRight, Database, Download, LogOut, Trash2, User, UserX, X } from 'lucide-react'
+import { AlertTriangle, BookOpen, ChevronRight, Database, Download, Trash2, User, UserX, X } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { signOut } from '../services/authService'
 import { exportTransactionsCsv, getDataStats, requestAccountDeletion, resetFinancialData } from '../services/dataService'
 
 const input = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'
@@ -87,8 +86,6 @@ export default function SettingsPage() {
 
       {stats && remaining.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Data masih tersimpan</p><p className="mt-1 leading-6">Pengajuan hapus akun belum dapat diproses. Selesaikan data berikut: {remaining.map(([label,key]) => `${label} (${Number(stats[key] || 0).toLocaleString('id-ID')})`).join(', ')}.</p></div>}
       {stats && remaining.length === 0 && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><p className="font-extrabold">Data keuangan kosong</p><p className="mt-1 leading-6">Akun sudah memenuhi pemeriksaan data untuk mengajukan penghapusan kepada administrator.</p></div>}
-
-      <div className="pt-2 text-center"><button onClick={() => signOut()} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-50"><LogOut size={17}/>Keluar</button><p className="mt-2 text-xs text-slate-400">WeMoney V1 | © {new Date().getFullYear()} Created Jsuryana</p></div>
     </div>
 
     {modal === 'profile' && <Modal title="Profil" icon={User} onClose={closeModal}>
