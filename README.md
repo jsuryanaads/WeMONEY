@@ -23,12 +23,27 @@ Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
 - Kategori dan manajemen dompet
 - Laporan
 - Export transaksi ke CSV
-- Lampiran struk JPG/PNG/WEBP/PDF dengan Storage private
-- OCR receipt: struktur data sudah siap; engine OCR eksternal/client akan menjadi tahap berikutnya agar tidak menanamkan secret API ke frontend
+- Smart Receipt / OCR dengan prinsip transient processing
+- Hasil OCR yang sudah diverifikasi disimpan sebagai data terstruktur di database
+- File receipt tidak disimpan di Supabase Storage
+- File receipt hanya hidup selama proses OCR dan dibuang setelah selesai
 - Reset data keuangan
 - Panduan penggunaan
 - Proteksi RLS berbasis `user_id`
 - Pengajuan penghapusan akun melalui administrator
+
+## Kebijakan Receipt / OCR
+WeMoney **tidak menjadi gudang arsip foto struk**.
+
+Alur yang ditetapkan:
+
+`File receipt → proses sementara → OCR → user verifikasi → simpan hasil teks/angka → file dibuang`
+
+Tidak digunakan:
+- Supabase Storage sebagai penyimpanan receipt
+- localStorage sebagai penyimpanan receipt atau hasil transaksi
+
+Database hanya menyimpan informasi hasil pemrosesan seperti merchant, tanggal, subtotal, diskon, pajak, total, status OCR, dan data OCR terstruktur/raw bila diperlukan. Engine OCR belum diaktifkan pada V1.3.0; integrasinya harus mengikuti alur transient ini dan tidak boleh mengunggah file receipt ke Storage.
 
 ## Kebijakan penghapusan akun
 Pengguna **tidak dapat menghapus akun secara langsung dari aplikasi**.
@@ -60,6 +75,6 @@ Migration berada di `supabase/migrations/`. Perubahan DDL harus diterapkan melal
 
 ## Status
 
-V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan secure receipt attachment. OCR belum diaktifkan sampai engine OCR dipilih dan dikonfigurasi secara aman.
+V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan arsitektur Smart Receipt/OCR transient. OCR engine belum diaktifkan. Implementasi OCR berikutnya wajib memproses file sementara dan hanya menyimpan hasil yang telah diverifikasi.
 
 © 2026 Created Jsuryana
