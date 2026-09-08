@@ -18,7 +18,7 @@ create policy account_deletion_requests_insert_own on public.account_deletion_re
   for insert to authenticated with check ((select auth.uid()) = user_id and status = 'pending');
 grant select, insert on public.account_deletion_requests to authenticated;
 
-revoke all on function public.delete_my_account() from authenticated;
+revoke all on function public.delete_my_account() from public, anon, authenticated;
 
 create or replace function public.request_account_deletion()
 returns void
@@ -57,5 +57,5 @@ begin
 end;
 $$;
 
-revoke all on function public.request_account_deletion() from public;
+revoke all on function public.request_account_deletion() from public, anon;
 grant execute on function public.request_account_deletion() to authenticated;
