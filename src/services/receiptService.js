@@ -1,16 +1,16 @@
 import { supabase } from '../lib/supabase'
 
 const MAX_SIZE = 10 * 1024 * 1024
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
 /**
- * Receipt files are transient. This helper only validates a File object in the browser.
+ * Receipt files are transient. This helper only validates an image File object in the browser.
  * No receipt bytes are uploaded to Supabase Storage.
  */
 export function validateReceiptFile(file) {
-  if (!file) throw new Error('Pilih file struk terlebih dahulu.')
-  if (!ALLOWED.includes(file.type)) throw new Error('Format struk harus JPG, PNG, WEBP, atau PDF.')
-  if (file.size > MAX_SIZE) throw new Error('Ukuran struk maksimal 10 MB.')
+  if (!file) throw new Error('Pilih foto struk terlebih dahulu.')
+  if (!ALLOWED.includes(file.type)) throw new Error('OCR saat ini mendukung JPG, PNG, atau WEBP.')
+  if (file.size > MAX_SIZE) throw new Error('Ukuran foto struk maksimal 10 MB.')
   return file
 }
 
