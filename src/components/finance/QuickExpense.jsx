@@ -11,12 +11,8 @@ const today = () => new Date().toISOString().slice(0, 10)
 function parseQuickInput(value) {
   const text = value.trim()
   if (!text) return { description: '', amount: 0 }
-
-  // Amount is intentionally taken from the final numeric token so input such as
-  // "Beli rokok dan makan 40000" becomes description + Rp40.000.
   const match = text.match(/(?:rp\.?\s*)?([0-9][0-9.,]*)\s*$/i)
   if (!match) return { description: text, amount: 0 }
-
   const rawAmount = match[1]
   const normalized = rawAmount.replace(/[.,]/g, '')
   const amount = Number(normalized)
@@ -57,25 +53,12 @@ export default function QuickExpense({ open, onClose }) {
       if (!user?.id) throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.')
       if (!wallets.length) throw new Error('Belum ada dompet aktif untuk mencatat pengeluaran.')
       if (!categories.length) throw new Error('Belum ada kategori pengeluaran.')
-
       const parsed = parseQuickInput(input)
       if (!parsed.description) throw new Error('Tulis keterangan pengeluaran terlebih dahulu.')
       if (!parsed.amount || parsed.amount <= 0) throw new Error('Nominal belum ditemukan. Contoh: Beli rokok dan makan 40000')
-
       const wallet = wallets.find(item => item.name?.trim().toLowerCase() === 'kas utama') || wallets[0]
       const category = categories.find(item => item.name?.trim().toLowerCase() === 'belanja') || categories[0]
-
-      await createTransaction(user.id, {
-        wallet_id: wallet.id,
-        category_id: category.id,
-        type: 'expense',
-        amount: parsed.amount,
-        transaction_date: today(),
-        description: parsed.description,
-        notes: null,
-        source: 'quick_input'
-      })
-
+      await createTransaction(user.id, { wallet_id: wallet.id, category_id: category.id, type: 'expense', amount: parsed.amount, transaction_date: today(), description: parsed.description, notes: null, source: 'quick_input' })
       setSaved(true)
       window.dispatchEvent(new Event('wemoney:data-changed'))
       setTimeout(() => onClose(), 650)
@@ -89,27 +72,20 @@ export default function QuickExpense({ open, onClose }) {
   const preview = parseQuickInput(input)
   const wallet = wallets.find(item => item.name?.trim().toLowerCase() === 'kas utama') || wallets[0]
   const category = categories.find(item => item.name?.trim().toLowerCase() === 'belanja') || categories[0]
-
   if (!open) return null
-  return <div className="fixed inset-0 z-[70] grid items-end justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quick-expense-title">
-    <div className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl dark:bg-slate-900 sm:rounded-3xl sm:p-6">
+
+  return <div className="wm-quick-overlay fixed inset-0 z-[70] grid items-end justify-center p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quick-expense-title">
+    <div className="wm-quick-card w-full max-w-md rounded-t-[28px] p-5 shadow-2xl sm:rounded-[28px] sm:p-6">
       <div className="mb-5 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20"><Zap size={21} fill="currentColor" /></div><div><h2 id="quick-expense-title" className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Quick Expense</h2><p className="text-xs text-slate-400">Tulis seperti biasa, WeMoney yang mengatur sisanya.</p></div></div>
-        <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Tutup Quick Expense"><X size={19}/></button>
+        <div className="flex items-center gap-3"><div className="wm-feature-icon grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white"><Zap size={22} fill="currentColor" /></div><div><div className="mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider wm-feature-badge">Fitur Unggulan</div><h2 id="quick-expense-title" className="text-xl font-extrabold">Catat Cepat</h2><p className="mt-0.5 text-xs leading-5 opacity-65">Ketik seperti biasa. We MONEY mengatur sisanya.</p></div></div>
+        <button type="button" onClick={onClose} className="rounded-xl p-2 opacity-55 hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/5" aria-label="Tutup Catat Cepat"><X size={19}/></button>
       </div>
       {error && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">{error}</div>}
-      {saved ? <div className="grid place-items-center py-10 text-center"><div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"><Check size={28}/></div><p className="mt-4 font-extrabold text-slate-900 dark:text-slate-100">Pengeluaran tersimpan</p><p className="mt-1 text-sm text-slate-400">{money(preview.amount)} dari {wallet?.name || 'Kas Utama'}.</p></div> : <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Catat pengeluaran<input autoFocus required className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white" placeholder="Contoh: Beli rokok dan makan 40000" value={input} onChange={event => setInput(event.target.value)}/></label>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-950">
-          <div className="mb-2 font-bold text-slate-700 dark:text-slate-200">Otomatis</div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div><span className="text-slate-400">Nominal</span><div className="mt-1 font-extrabold text-slate-900 dark:text-white">{preview.amount ? money(preview.amount) : '—'}</div></div>
-            <div><span className="text-slate-400">Dompet</span><div className="mt-1 font-extrabold text-slate-900 dark:text-white">{loadingData ? 'Memuat...' : wallet?.name || '—'}</div></div>
-            <div className="col-span-2"><span className="text-slate-400">Kategori</span><div className="mt-1 font-extrabold text-slate-900 dark:text-white">{loadingData ? 'Memuat...' : category?.name || '—'}</div></div>
-          </div>
-        </div>
-        <p className="text-xs leading-5 text-slate-400">Format sederhana: <span className="font-bold text-slate-500 dark:text-slate-300">keterangan + nominal</span>. Contoh: “Beli rokok dan makan 40000”. Nominal otomatis dipotong dari teks dan dicatat sebagai pengeluaran hari ini.</p>
-        <button disabled={loading || loadingData || !user?.id} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50"><Zap size={17} fill="currentColor" />{loading ? 'Menyimpan...' : 'Simpan Pengeluaran'}</button>
+      {saved ? <div className="grid place-items-center py-10 text-center"><div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"><Check size={28}/></div><p className="mt-4 font-extrabold">Pengeluaran tersimpan</p><p className="mt-1 text-sm opacity-60">{money(preview.amount)} dari {wallet?.name || 'Kas Utama'}.</p></div> : <form onSubmit={submit} className="space-y-4">
+        <label className="block text-sm font-bold">Apa yang kamu beli?<input autoFocus required className="wm-quick-input mt-2 w-full rounded-2xl px-4 py-4 text-lg font-bold outline-none" placeholder="Contoh: Beli rokok dan makan 40000" value={input} onChange={event => setInput(event.target.value)}/></label>
+        <div className="wm-quick-preview rounded-2xl p-4 text-sm"><div className="mb-3 flex items-center justify-between"><span className="text-xs font-extrabold uppercase tracking-wider opacity-55">Otomatis</span><span className="text-[11px] opacity-45">Hari ini</span></div><div className="grid grid-cols-2 gap-4 text-xs"><div><span className="opacity-50">Nominal</span><div className="mt-1 text-base font-extrabold">{preview.amount ? money(preview.amount) : '—'}</div></div><div><span className="opacity-50">Dompet</span><div className="mt-1 font-extrabold">{loadingData ? 'Memuat...' : wallet?.name || '—'}</div></div><div className="col-span-2"><span className="opacity-50">Kategori</span><div className="mt-1 font-extrabold">{loadingData ? 'Memuat...' : category?.name || '—'}</div></div></div></div>
+        <p className="text-xs leading-5 opacity-50">Format: <b>keterangan + nominal</b>. Contoh: “Beli rokok dan makan 40000”.</p>
+        <button disabled={loading || loadingData || !user?.id} className="wm-primary flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-extrabold shadow-lg"><Zap size={17} fill="currentColor" />{loading ? 'Menyimpan...' : 'Simpan Pengeluaran'}</button>
       </form>}
     </div>
   </div>
