@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
 import { THEME_PRESETS } from '../../theme/themeTokens'
 import { signOut } from '../../services/authService'
+import { registerCurrentDevice } from '../../services/deviceService'
 import QuickExpense from '../finance/QuickExpense'
 import QuickPhotoExpense from '../finance/QuickPhotoExpense'
 import WeMoneyLogo from '../brand/WeMoneyLogo'
@@ -15,6 +16,7 @@ const items = [['Dashboard', '/dashboard', LayoutDashboard], ['Transaksi', '/tra
 export default function AppShell({ title, children }) {
   const navigate = useNavigate(); const location = useLocation(); const { user } = useAuth(); const { visualTheme, setVisualTheme } = useTheme(); const [open, setOpen] = useState(false); const [themeOpen, setThemeOpen] = useState(false); const [captureOpen, setCaptureOpen] = useState(false); const [quickExpenseOpen, setQuickExpenseOpen] = useState(false); const [quickPhotoOpen, setQuickPhotoOpen] = useState(false); const [signingOut, setSigningOut] = useState(false)
   const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Pengguna'; const year = new Date().getFullYear(); const appVersion = `V${packageJson.version}`; const pageKey = location.pathname.replace(/^\//, '').replaceAll('/', '-') || 'dashboard'; const go = path => { setOpen(false); setCaptureOpen(false); setThemeOpen(false); navigate(path) }
+  useEffect(() => { if (!user?.id) return; registerCurrentDevice(user.id).catch(() => {}) }, [user?.id])
   useEffect(() => { const openQuick = () => { setCaptureOpen(false); setQuickExpenseOpen(true) }; window.addEventListener('wemoney:open-quick', openQuick); return () => window.removeEventListener('wemoney:open-quick', openQuick) }, [])
   useEffect(() => { const handleKeyDown = event => { if (event.key !== 'Escape') return; setOpen(false); setCaptureOpen(false); setThemeOpen(false); if (quickExpenseOpen) setQuickExpenseOpen(false); if (quickPhotoOpen) setQuickPhotoOpen(false) }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown) }, [quickExpenseOpen, quickPhotoOpen])
   const openQuick = () => { setCaptureOpen(false); setQuickExpenseOpen(true) }
