@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
 import Dashboard from '../pages/Dashboard'
+import TransactionsPage from '../pages/TransactionsPage'
 import FinancePage from '../pages/FinancePage'
 import WalletsPage from '../pages/WalletsPage'
 import SettingsPage from '../pages/SettingsPage'
@@ -26,7 +27,7 @@ export default function App() {
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/transaksi" element={<FinancePage section="transaksi" />} />
+      <Route path="/transaksi" element={<TransactionsPage />} />
       <Route path="/kategori" element={<FinancePage section="kategori" />} />
       <Route path="/dompet" element={<WalletsPage />} />
       <Route path="/laporan" element={<FinancePage section="laporan" />} />
