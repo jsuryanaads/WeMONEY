@@ -1,6 +1,6 @@
 # WeMoney
 
-**Versi: V1.3.0**
+**Versi: V1.3.1**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
@@ -81,6 +81,6 @@ Migration berada di `supabase/migrations/`. Perubahan DDL harus diterapkan melal
 
 ## Status
 
-V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan Smart Receipt/OCR transient. OCR browser aktif untuk JPG/PNG/WEBP dengan review sebelum penyimpanan. File receipt tidak disimpan di Storage.
+V1.3.1 — Smart Receipt/OCR browser aktif untuk JPG/PNG/WEBP dengan review sebelum penyimpanan. File receipt tidak disimpan di Storage dan tidak menggunakan localStorage.
 
 © 2026 Created Jsuryana
