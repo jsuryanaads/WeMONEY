@@ -6,6 +6,7 @@ import { AuthProvider } from './hooks/useAuth'
 import './styles/index.css'
 import './styles/wemoney-v2.css'
 import './styles/accessibility.css'
+import './styles/capture-menu.css'
 import { applyTheme, getInitialTheme } from './hooks/useTheme'
 
 applyTheme(getInitialTheme())
