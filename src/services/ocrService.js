@@ -1,6 +1,6 @@
 import { createWorker } from 'tesseract.js'
 
-const moneyPattern = /(?:rp\.?\s*)?([0-9][0-9.\s]*(?:,[0-9]{1,2})?)/i
+const moneyPattern = /(?:rp\.?\s*)?([0-9][0-9.\s]*(?:,[0-9]{1,3})?)/i
 const DATE_PATTERNS = [
   /\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/,
   /\b(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\b/,
@@ -10,11 +10,17 @@ function parseMoney(value) {
   if (!value) return null
   const cleaned = String(value).replace(/[^0-9,.-]/g, '')
   if (!cleaned) return null
-  const normalized = cleaned.includes(',') && cleaned.includes('.')
-    ? cleaned.replace(/\./g, '').replace(',', '.')
-    : cleaned.includes('.')
-      ? cleaned.replace(/\./g, '')
-      : cleaned.replace(',', '.')
+  let normalized = cleaned
+  if (cleaned.includes('.') && cleaned.includes(',')) {
+    const lastComma = cleaned.lastIndexOf(',')
+    const decimals = cleaned.length - lastComma - 1
+    normalized = decimals === 3 ? cleaned.replace(/[.,]/g, '') : cleaned.replace(/\./g, '').replace(',', '.')
+  } else if (cleaned.includes(',')) {
+    const decimals = cleaned.length - cleaned.lastIndexOf(',') - 1
+    normalized = decimals === 3 ? cleaned.replace(',', '') : cleaned.replace(',', '.')
+  } else if (cleaned.includes('.')) {
+    normalized = cleaned.replace(/\./g, '')
+  }
   const number = Number(normalized)
   return Number.isFinite(number) ? Math.round(number) : null
 }
