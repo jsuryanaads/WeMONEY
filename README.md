@@ -1,6 +1,6 @@
 # WeMoney
 
-**Versi: V1.2.2**
+**Versi: V1.3.0**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
@@ -16,10 +16,15 @@ Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
 ## Fitur utama
 - Dashboard keuangan
 - Transaksi pemasukan dan pengeluaran
+- Edit dan hapus transaksi
+- Pencarian dan filter transaksi
+- Pagination riwayat transaksi
 - Transfer antar dompet
 - Kategori dan manajemen dompet
 - Laporan
 - Export transaksi ke CSV
+- Lampiran struk JPG/PNG/WEBP/PDF dengan Storage private
+- OCR receipt: struktur data sudah siap; engine OCR eksternal/client akan menjadi tahap berikutnya agar tidak menanamkan secret API ke frontend
 - Reset data keuangan
 - Panduan penggunaan
 - Proteksi RLS berbasis `user_id`
@@ -55,6 +60,6 @@ Migration berada di `supabase/migrations/`. Perubahan DDL harus diterapkan melal
 
 ## Status
 
-V1.2.2 — aplikasi menggunakan Supabase untuk autentikasi dan data keuangan, dengan pengamanan RLS, reset data, export CSV, dan alur pengajuan penghapusan akun yang membutuhkan pemeriksaan administrator.
+V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan secure receipt attachment. OCR belum diaktifkan sampai engine OCR dipilih dan dikonfigurasi secara aman.
 
 © 2026 Created Jsuryana
