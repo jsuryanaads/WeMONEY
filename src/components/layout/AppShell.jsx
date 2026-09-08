@@ -42,7 +42,7 @@ export default function AppShell({ title, children }) {
               return <button key={path} onClick={() => go(path)} aria-current={active ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all duration-150 sm:px-4 ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100'}`}><Icon size={19} />{label}</button>
             })}
           </nav>
-          <div className="mt-auto border-t border-slate-200 pt-4 text-xs leading-5 text-slate-400 dark:border-slate-700">WeMoney | V1.2.1 r1<br />© {year} Created Jsuryana</div>
+          <div className="mt-auto border-t border-slate-200 pt-4 text-xs leading-5 text-slate-400 dark:border-slate-700">WeMoney | V1.2.2<br />© {year} Created Jsuryana</div>
         </div>
       </aside>
 
