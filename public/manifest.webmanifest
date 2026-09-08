@@ -1,0 +1,18 @@
+{
+  "name": "We MONEY",
+  "short_name": "We MONEY",
+  "description": "Catat Uangmu, Rencanakan Masa Depanmu",
+  "start_url": "/WeMONEY/",
+  "scope": "/WeMONEY/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/WeMONEY/assets/branding/wemoney-app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
