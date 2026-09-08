@@ -44,7 +44,14 @@ export async function updateTransaction(id, userId, payload) {
 export async function deleteTransaction(id, userId) {
   const { data: tx, error: findError } = await supabase.from('transactions').select('receipt_id').eq('id', id).eq('user_id', userId).single()
   if (findError) throw findError
+  let storagePath = null
+  if (tx.receipt_id) {
+    const { data: receipt, error: receiptError } = await supabase.from('receipts').select('storage_path').eq('id', tx.receipt_id).eq('user_id', userId).maybeSingle()
+    if (receiptError) throw receiptError
+    storagePath = receipt?.storage_path || null
+  }
   const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId)
   if (error) throw error
   if (tx.receipt_id) await supabase.from('receipts').delete().eq('id', tx.receipt_id).eq('user_id', userId)
+  if (storagePath) await supabase.storage.from('receipts').remove([storagePath])
 }
