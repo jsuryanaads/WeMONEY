@@ -12,7 +12,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
             <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-800/80 p-0.5 shadow-lg shadow-blue-600/10">
               <WeMoneyLogo size={64} />
             </div>
-            <div className="text-2xl font-extrabold tracking-tight text-white">We<span className="text-blue-400">MONEY</span></div>
+            <div className="text-2xl font-extrabold tracking-tight text-white">We<span className="text-blue-400"> MONEY</span></div>
             <p className="mt-1 text-xs leading-5 text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p>
           </header>
           <div className="border-t border-slate-800/80 px-6 py-7 sm:px-8 sm:py-8">
@@ -24,7 +24,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
             {footer && <div className="mt-6 text-center text-sm text-slate-400">{footer}</div>}
           </div>
         </section>
-        <p className="mt-5 text-center text-xs text-slate-500">WeMONEY V{version} | © {year} Created Jsuryana</p>
+        <p className="mt-5 text-center text-xs text-slate-500">We MONEY V{version} | © {year} Created Jsuryana</p>
       </div>
     </main>
   )
