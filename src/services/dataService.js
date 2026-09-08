@@ -11,8 +11,8 @@ export async function resetFinancialData() {
   if (error) throw error
 }
 
-export async function deleteMyAccount() {
-  const { error } = await supabase.rpc('delete_my_account')
+export async function requestAccountDeletion() {
+  const { error } = await supabase.rpc('request_account_deletion')
   if (error) throw error
 }
 
