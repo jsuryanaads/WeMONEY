@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 
-const SELECT = 'id,user_id,wallet_id,category_id,type,amount,transaction_date,description,notes,created_at,updated_at,category:categories(id,name,type,icon,color),wallet:wallets(id,name,type)'
+const SELECT = 'id,user_id,wallet_id,category_id,type,amount,transaction_date,description,notes,source,receipt_id,created_at,updated_at,category:categories(id,name,type,icon,color),wallet:wallets(id,name,type)'
 
 export async function getTransactionsForPeriod(userId, startDate, endDate) {
   const { data, error } = await supabase.from('transactions').select(SELECT).eq('user_id', userId).gte('transaction_date', startDate).lte('transaction_date', endDate).order('transaction_date', { ascending: false }).order('created_at', { ascending: false })
@@ -15,10 +15,10 @@ export async function getTransactions(userId, limit = 100) {
 }
 
 export async function getTransactionsPage(userId, { page = 1, pageSize = 10, search = '', type = 'all', walletId = 'all', categoryId = 'all', startDate = '', endDate = '' } = {}) {
-  const from = Math.max(0, (page - 1) * pageSize)
-  const to = from + pageSize - 1
+  const from = Math.max(0, (page - 1) * pageSize); const to = from + pageSize - 1
   let query = supabase.from('transactions').select(SELECT, { count: 'exact' }).eq('user_id', userId)
-  if (search.trim()) query = query.or(`description.ilike.%${search.trim()}%,notes.ilike.%${search.trim()}%`)
+  const term = search.trim().replace(/[^\p{L}\p{N}\s._-]/gu, ' ')
+  if (term) query = query.or(`description.ilike.%${term}%,notes.ilike.%${term}%`)
   if (type !== 'all') query = query.eq('type', type)
   if (walletId !== 'all') query = query.eq('wallet_id', walletId)
   if (categoryId !== 'all') query = query.eq('category_id', categoryId)
@@ -42,6 +42,9 @@ export async function updateTransaction(id, userId, payload) {
 }
 
 export async function deleteTransaction(id, userId) {
+  const { data: tx, error: findError } = await supabase.from('transactions').select('receipt_id').eq('id', id).eq('user_id', userId).single()
+  if (findError) throw findError
   const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId)
   if (error) throw error
+  if (tx.receipt_id) await supabase.from('receipts').delete().eq('id', tx.receipt_id).eq('user_id', userId)
 }
