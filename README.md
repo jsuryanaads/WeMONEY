@@ -12,6 +12,7 @@ Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
 - Lucide React
 - Recharts
 - Supabase Auth + PostgreSQL + Row Level Security (RLS)
+- Tesseract.js 6 untuk OCR di browser
 
 ## Fitur utama
 - Dashboard keuangan
@@ -23,10 +24,11 @@ Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
 - Kategori dan manajemen dompet
 - Laporan
 - Export transaksi ke CSV
-- Smart Receipt / OCR dengan prinsip transient processing
+- Smart Receipt / OCR transient berbasis browser
+- Review dan koreksi hasil OCR sebelum disimpan
 - Hasil OCR yang sudah diverifikasi disimpan sebagai data terstruktur di database
 - File receipt tidak disimpan di Supabase Storage
-- File receipt hanya hidup selama proses OCR dan dibuang setelah selesai
+- File receipt hanya hidup selama proses OCR dan dilepas setelah pemrosesan/verifikasi
 - Reset data keuangan
 - Panduan penggunaan
 - Proteksi RLS berbasis `user_id`
@@ -37,13 +39,17 @@ WeMoney **tidak menjadi gudang arsip foto struk**.
 
 Alur yang ditetapkan:
 
-`File receipt → proses sementara → OCR → user verifikasi → simpan hasil teks/angka → file dibuang`
+`File receipt → proses sementara di browser → OCR → user verifikasi → simpan hasil teks/angka → file dibuang`
 
 Tidak digunakan:
 - Supabase Storage sebagai penyimpanan receipt
 - localStorage sebagai penyimpanan receipt atau hasil transaksi
 
-Database hanya menyimpan informasi hasil pemrosesan seperti merchant, tanggal, subtotal, diskon, pajak, total, status OCR, dan data OCR terstruktur/raw bila diperlukan. Engine OCR belum diaktifkan pada V1.3.0; integrasinya harus mengikuti alur transient ini dan tidak boleh mengunggah file receipt ke Storage.
+OCR saat ini menggunakan Tesseract.js dan memproses foto JPG, PNG, atau WEBP di browser. Tidak ada secret OCR API yang ditanamkan ke frontend dan file receipt tidak dikirim ke Supabase Storage.
+
+Database hanya menyimpan hasil yang sudah dikonfirmasi seperti merchant, tanggal, subtotal, diskon, pajak, total, confidence, dan teks OCR terpotong untuk konteks hasil pemrosesan. User tetap wajib memeriksa nominal sebelum transaksi disimpan.
+
+PDF belum menjadi input OCR pada implementasi ini; dukungan PDF dapat ditambahkan kemudian melalui rasterisasi halaman tanpa mengubah kebijakan transient storage.
 
 ## Kebijakan penghapusan akun
 Pengguna **tidak dapat menghapus akun secara langsung dari aplikasi**.
@@ -75,6 +81,6 @@ Migration berada di `supabase/migrations/`. Perubahan DDL harus diterapkan melal
 
 ## Status
 
-V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan arsitektur Smart Receipt/OCR transient. OCR engine belum diaktifkan. Implementasi OCR berikutnya wajib memproses file sementara dan hanya menyimpan hasil yang telah diverifikasi.
+V1.3.0 — transaction workflow ditingkatkan dengan edit, search/filter, pagination, dan Smart Receipt/OCR transient. OCR browser aktif untuk JPG/PNG/WEBP dengan review sebelum penyimpanan. File receipt tidak disimpan di Storage.
 
 © 2026 Created Jsuryana
