@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 export async function getDataStats() {
   const { data, error } = await supabase.rpc('get_my_data_stats')
   if (error) throw error
-  return data?.[0] ?? { transactions: 0, transfers: 0, categories: 0, wallets: 0, last_activity: null }
+  return data?.[0] ?? { transactions: 0, transfers: 0, categories: 0, wallets: 0, budgets: 0, receipts: 0, recurring_transactions: 0, last_activity: null }
 }
 
 export async function resetFinancialData() {
