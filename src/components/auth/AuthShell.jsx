@@ -1,5 +1,5 @@
-import { WalletCards } from 'lucide-react'
 import { version } from '../../../package.json'
+import WeMoneyLogo from '../brand/WeMoneyLogo'
 
 export default function AuthShell({ title, subtitle, children, footer }) {
   const year = new Date().getFullYear()
@@ -10,9 +10,9 @@ export default function AuthShell({ title, subtitle, children, footer }) {
         <section className="overflow-hidden rounded-[1.75rem] border border-slate-800/80 bg-slate-900/95 shadow-2xl shadow-black/40 backdrop-blur-xl">
           <header className="px-6 pb-7 pt-8 text-center sm:px-8 sm:pt-9">
             <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
-              <WalletCards size={32} strokeWidth={2.2} />
+              <WeMoneyLogo size={64} />
             </div>
-            <div className="text-2xl font-extrabold tracking-tight text-white">We<span className="text-blue-400">Money</span></div>
+            <div className="text-2xl font-extrabold tracking-tight text-white">We<span className="text-blue-400">MONEY</span></div>
             <p className="mt-1 text-xs leading-5 text-slate-400">Catat Uangmu, Rencanakan Masa Depanmu</p>
           </header>
           <div className="border-t border-slate-800/80 px-6 py-7 sm:px-8 sm:py-8">
@@ -24,7 +24,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
             {footer && <div className="mt-6 text-center text-sm text-slate-400">{footer}</div>}
           </div>
         </section>
-        <p className="mt-5 text-center text-xs text-slate-500">WeMoney V{version} | © {year} Created Jsuryana</p>
+        <p className="mt-5 text-center text-xs text-slate-500">WeMONEY V{version} | © {year} Created Jsuryana</p>
       </div>
     </main>
   )
