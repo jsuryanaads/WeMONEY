@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './app/App'
 import { AuthProvider } from './hooks/useAuth'
 import './styles/index.css'
+import './styles/wemoney-v2.css'
 import { applyTheme, getInitialTheme } from './hooks/useTheme'
 
 applyTheme(getInitialTheme())
