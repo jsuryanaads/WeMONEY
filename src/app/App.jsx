@@ -6,6 +6,7 @@ import TransactionsPage from '../pages/TransactionsPageOCR'
 import FinancePage from '../pages/FinancePage'
 import WalletsPage from '../pages/WalletsPage'
 import ReportsPage from '../pages/ReportsPage'
+import BudgetsPage from '../pages/BudgetsPage'
 import SettingsPage from '../pages/SettingsPage'
 import GuidePage from '../pages/GuidePage'
 import Login from '../pages/Login'
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/transaksi" element={<TransactionsPage />} />
       <Route path="/kategori" element={<FinancePage section="kategori" />} />
       <Route path="/dompet" element={<WalletsPage />} />
+      <Route path="/anggaran" element={<BudgetsPage />} />
       <Route path="/laporan" element={<ReportsPage />} />
       <Route path="/pengaturan" element={<SettingsPage />} />
       <Route path="/panduan" element={<GuidePage />} />
