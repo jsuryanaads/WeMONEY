@@ -1,10 +1,16 @@
-# WeMoney
+# We MONEY
 
 **Versi: V1.3.1**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
 Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
+
+## Branding resmi
+- **App Icon:** Wallet + W
+- **Logo / Brand:** We MONEY
+- **Tagline:** Catat Uangmu, Rencanakan Masa Depanmu
+- Pedoman lengkap: `docs/BRAND_GUIDELINES.md`
 
 ## Stack
 - React 19 + Vite 7
@@ -35,7 +41,7 @@ Aplikasi pencatatan keuangan pribadi dengan React + Vite dan Supabase.
 - Pengajuan penghapusan akun melalui administrator
 
 ## Kebijakan Receipt / OCR
-WeMoney **tidak menjadi gudang arsip foto struk**.
+We MONEY **tidak menjadi gudang arsip foto struk**.
 
 Alur yang ditetapkan:
 
@@ -56,7 +62,7 @@ Pengguna **tidak dapat menghapus akun secara langsung dari aplikasi**.
 
 Sebelum mengajukan penghapusan, akun harus benar-benar kosong: transaksi, transfer, dompet, kategori, anggaran, struk, dan transaksi berulang harus tidak memiliki data untuk user tersebut. Sistem melakukan pemeriksaan ini saat pengajuan.
 
-Setelah lolos pemeriksaan, WeMoney hanya membuat pengajuan berstatus `pending`. Administrator tetap dikelola di Supabase dan melakukan pemeriksaan serta proses penghapusan akun secara administratif.
+Setelah lolos pemeriksaan, We MONEY hanya membuat pengajuan berstatus `pending`. Administrator tetap dikelola di Supabase dan melakukan pemeriksaan serta proses penghapusan akun secara administratif.
 
 ## Development
 
