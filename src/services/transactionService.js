@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
+import { getDeviceId, getDeviceName } from './deviceService'
 
-const SELECT = 'id,user_id,wallet_id,category_id,type,amount,transaction_date,description,notes,source,receipt_id,created_at,updated_at,category:categories(id,name,type,icon,color),wallet:wallets(id,name,type)'
+const SELECT = 'id,user_id,wallet_id,category_id,type,amount,transaction_date,description,notes,source,receipt_id,device_id,device_name,created_at,updated_at,category:categories(id,name,type,icon,color),wallet:wallets(id,name,type)'
 
 export async function getTransactionsForPeriod(userId, startDate, endDate) {
   const { data, error } = await supabase.from('transactions').select(SELECT).eq('user_id', userId).gte('transaction_date', startDate).lte('transaction_date', endDate).order('transaction_date', { ascending: false }).order('created_at', { ascending: false })
@@ -42,14 +43,18 @@ function validateTransactionPayload(payload) {
 
 export async function createTransaction(userId, payload) {
   const amount = validateTransactionPayload(payload)
-  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, source: payload.source || 'manual', receipt_id: payload.receipt_id || null }).select(SELECT).single()
+  const deviceId = getDeviceId()
+  const deviceName = getDeviceName()
+  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, source: payload.source || 'manual', receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName }).select(SELECT).single()
   if (error) throw error
   return data
 }
 
 export async function updateTransaction(id, userId, payload) {
   const amount = validateTransactionPayload(payload)
-  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, receipt_id: payload.receipt_id || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
+  const deviceId = getDeviceId()
+  const deviceName = getDeviceName()
+  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
   if (error) throw error
   return data
 }
