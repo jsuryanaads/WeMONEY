@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { BarChart3, Camera, CreditCard, LayoutDashboard, LogOut, Menu, Moon, Palette, Settings, Sun, Tags, Target, Wallet, X, Zap } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useAuth } from '../../hooks/useAuth'
