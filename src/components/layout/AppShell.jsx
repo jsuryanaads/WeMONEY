@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Moon, Palette, Settings, Sun, Tags, Wallet, X, Zap } from 'lucide-react'
+import { BarChart3, CreditCard, LayoutDashboard, LogOut, Menu, Moon, Palette, Settings, Tags, Target, Wallet, X, Zap } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
@@ -9,16 +9,12 @@ import { signOut } from '../../services/authService'
 import QuickExpense from '../finance/QuickExpense'
 import WeMoneyLogo from '../brand/WeMoneyLogo'
 
-const items = [['Dashboard', '/dashboard', LayoutDashboard], ['Transaksi', '/transaksi', CreditCard], ['Kategori', '/kategori', Tags], ['Dompet', '/dompet', Wallet], ['Laporan', '/laporan', BarChart3], ['Pengaturan', '/pengaturan', Settings]]
+const items = [['Dashboard', '/dashboard', LayoutDashboard], ['Transaksi', '/transaksi', CreditCard], ['Kategori', '/kategori', Tags], ['Dompet', '/dompet', Wallet], ['Anggaran', '/anggaran', Target], ['Laporan', '/laporan', BarChart3], ['Pengaturan', '/pengaturan', Settings]]
 
 export default function AppShell({ title, children }) {
   const navigate = useNavigate(); const location = useLocation(); const { user } = useAuth(); const { theme, setTheme, visualTheme, setVisualTheme } = useTheme(); const [open, setOpen] = useState(false); const [themeOpen, setThemeOpen] = useState(false); const [quickExpenseOpen, setQuickExpenseOpen] = useState(false); const [signingOut, setSigningOut] = useState(false)
   const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Pengguna'; const year = new Date().getFullYear(); const appVersion = `V${packageJson.version}`; const pageKey = location.pathname.replace(/^\//, '').replaceAll('/', '-') || 'dashboard'; const go = path => { setOpen(false); navigate(path) }; const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
-  useEffect(() => {
-    const openQuick = () => setQuickExpenseOpen(true)
-    window.addEventListener('wemoney:open-quick', openQuick)
-    return () => window.removeEventListener('wemoney:open-quick', openQuick)
-  }, [])
+  useEffect(() => { const openQuick = () => setQuickExpenseOpen(true); window.addEventListener('wemoney:open-quick', openQuick); return () => window.removeEventListener('wemoney:open-quick', openQuick) }, [])
   const handleSignOut = async () => { if (signingOut) return; setSigningOut(true); const { error } = await signOut(); if (!error) { setOpen(false); navigate('/login', { replace: true }) } setSigningOut(false) }
   return <div className={`wm-shell wm-page-${pageKey} min-h-screen overflow-x-hidden transition-colors duration-200 lg:p-4 lg:pl-[304px]`}>
     <aside className={`${open ? 'translate-x-0' : '-translate-x-full'} wm-sidebar fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] border p-4 shadow-xl transition-transform duration-200 sm:p-5 lg:inset-y-4 lg:left-4 lg:w-[272px] lg:translate-x-0 lg:rounded-2xl`}><div className="flex h-full flex-col">
