@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Edit3, FileText, Plus, Search, Trash2, X } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
-import ReceiptOcr from '../components/finance/ReceiptOcr'
 import { useAuth } from '../hooks/useAuth'
 import { getWalletBalances, createTransfer } from '../services/walletService'
 import { getCategories } from '../services/categoryService'
 import { getTransactionsPage, createTransaction, updateTransaction, deleteTransaction } from '../services/transactionService'
-import { createVerifiedReceipt, deleteReceipt } from '../services/receiptService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const today = () => new Date().toISOString().slice(0, 10)
@@ -25,7 +23,6 @@ export default function TransactionsPageOCR() {
   const [form, setForm] = useState(blankTransaction())
   const [transfer, setTransfer] = useState(blankTransfer())
   const [editing, setEditing] = useState(null)
-  const [ocrResult, setOcrResult] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [filters, setFilters] = useState({ search: '', type: 'all', walletId: 'all', categoryId: 'all', startDate: '', endDate: '' })
@@ -66,22 +63,10 @@ export default function TransactionsPageOCR() {
     setFilters({ search: '', type: 'all', walletId: 'all', categoryId: 'all', startDate: '', endDate: '' })
   }
 
-  function applyOcr(result) {
-    setOcrResult(result)
-    setForm(current => ({
-      ...current,
-      amount: result.total ?? '',
-      transaction_date: result.receipt_date || current.transaction_date,
-      description: result.merchant || current.description,
-    }))
-    setError('')
-  }
-
   async function save(e) {
     e.preventDefault()
     setError('')
     setBusy(true)
-    let receiptId = null
     try {
       if (Number(form.amount) <= 0) throw new Error('Nominal harus lebih besar dari 0.')
       if (!form.wallet_id) throw new Error('Pilih dompet terlebih dahulu.')
@@ -89,29 +74,11 @@ export default function TransactionsPageOCR() {
       if (editing) {
         await updateTransaction(editing.id, user.id, { ...form, receipt_id: editing.receipt_id || null })
       } else {
-        if (ocrResult) {
-          const receipt = await createVerifiedReceipt(user.id, {
-            receipt_date: ocrResult.receipt_date,
-            merchant: ocrResult.merchant,
-            subtotal: ocrResult.subtotal,
-            discount: ocrResult.discount,
-            tax: ocrResult.tax,
-            total: ocrResult.total,
-            ocr_raw_data: { confidence: ocrResult.confidence, raw_text: ocrResult.rawText },
-          })
-          receiptId = receipt.id
-        }
-        try {
-          await createTransaction(user.id, { ...form, receipt_id: receiptId, source: receiptId ? 'receipt' : 'manual' })
-        } catch (transactionError) {
-          if (receiptId) await deleteReceipt(receiptId, user.id)
-          throw transactionError
-        }
+        await createTransaction(user.id, { ...form, receipt_id: null, source: 'manual' })
       }
 
       setForm(blankTransaction())
       setEditing(null)
-      setOcrResult(null)
       await load()
     } catch (e) {
       setError(e.message || 'Gagal menyimpan transaksi.')
@@ -149,14 +116,12 @@ export default function TransactionsPageOCR() {
 
   function startEdit(tx) {
     setEditing(tx)
-    setOcrResult(null)
     setForm({ type: tx.type, amount: String(tx.amount ?? ''), wallet_id: tx.wallet_id ?? '', category_id: tx.category_id ?? '', transaction_date: tx.transaction_date, description: tx.description ?? '', notes: tx.notes ?? '' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function cancelEdit() {
     setEditing(null)
-    setOcrResult(null)
     setForm(blankTransaction())
   }
 
@@ -183,8 +148,7 @@ export default function TransactionsPageOCR() {
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Keterangan<input className={input} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Contoh: Belanja mingguan"/></label>
         <label className="md:col-span-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Catatan<textarea className={input} rows="3" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
 
-        {!editing && <div className="md:col-span-2"><ReceiptOcr disabled={busy} onVerified={applyOcr} onCancel={() => setOcrResult(null)}/></div>}
-        {ocrResult && <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-900/50 dark:bg-emerald-950/20"><b className="text-emerald-700 dark:text-emerald-300">Hasil OCR siap disimpan.</b><span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">File asli sudah dilepas; hanya data hasil ekstraksi yang akan disimpan.</span></div>}
+        <div className="md:col-span-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-500 dark:bg-slate-950 dark:text-slate-400">📷 Photo Catat tersedia di tombol <b>＋</b> pada FAB/navbar agar halaman Transaksi tetap fokus pada pencatatan manual dan riwayat.</div>
 
         <div className="md:col-span-2 flex flex-wrap gap-2"><button disabled={busy} className={button}>{busy ? 'Menyimpan...' : editing ? 'Simpan Perubahan' : <><Plus size={17} className="mr-1 inline"/>Simpan Transaksi</>}</button>{editing && <button type="button" onClick={cancelEdit} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300">Batal</button>}</div>
       </form>
@@ -195,17 +159,17 @@ export default function TransactionsPageOCR() {
           <div className="grid gap-2 md:grid-cols-6"><label className="relative md:col-span-2"><Search size={16} className="absolute left-3 top-4 text-slate-400"/><input className={`${input} pl-9`} value={filters.search} onChange={e => changeFilter('search', e.target.value)} placeholder="Cari keterangan/catatan..."/></label><select className={input} value={filters.type} onChange={e => changeFilter('type', e.target.value)}><option value="all">Semua jenis</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option></select><select className={input} value={filters.walletId} onChange={e => changeFilter('walletId', e.target.value)}><option value="all">Semua dompet</option>{wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select><select className={input} value={filters.categoryId} onChange={e => changeFilter('categoryId', e.target.value)}><option value="all">Semua kategori</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300">Reset</button></div>
           <div className="grid gap-2 sm:grid-cols-3"><label className="text-xs font-semibold text-slate-500">Dari<input type="date" className={input} value={filters.startDate} onChange={e => changeFilter('startDate', e.target.value)}/></label><label className="text-xs font-semibold text-slate-500">Sampai<input type="date" className={input} value={filters.endDate} onChange={e => changeFilter('endDate', e.target.value)}/></label><label className="text-xs font-semibold text-slate-500">Per halaman<select className={input} value={pageSize} onChange={e => { setPage(1); setPageSize(Number(e.target.value)) }}><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></label></div>
         </div>
-        <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">{rows.length ? rows.map(tx => <div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{tx.description || 'Tanpa keterangan'}</p><p className="truncate text-xs text-slate-400">{tx.transaction_date} · {tx.wallet?.name || 'Tanpa dompet'} · {tx.category?.name || 'Tanpa kategori'}</p></div><div className="flex shrink-0 items-center gap-1 sm:gap-3"><b className={tx.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}>{tx.type === 'income' ? '+' : '-'}{money(tx.amount)}</b><button onClick={() => startEdit(tx)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800" aria-label="Edit transaksi" title="Edit transaksi"><Edit3 size={17}/></button><button onClick={() => remove(tx.id)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800" aria-label="Hapus transaksi" title="Hapus transaksi"><Trash2 size={17}/></button></div></div>) : <div className="py-10 text-center text-sm text-slate-400">Tidak ada transaksi yang cocok.</div>}</div>
-        {totalPages > 1 && <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800"><button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40 dark:border-slate-700">Sebelumnya</button><span className="text-xs font-semibold text-slate-400">Halaman {page} / {totalPages}</span><button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold disabled:opacity-40 dark:border-slate-700">Berikutnya</button></div>}
+        <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">{rows.length ? rows.map(tx => <div key={tx.id} className="flex items-center justify-between gap-3 py-4"><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{tx.description || 'Tanpa keterangan'}</p><p className="truncate text-xs text-slate-400">{tx.transaction_date} · {tx.wallet?.name || 'Tanpa dompet'} · {tx.category?.name || 'Tanpa kategori'}</p></div><div className="flex shrink-0 items-center gap-1 sm:gap-3"><b className={tx.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}>{tx.type === 'income' ? '+' : '-'}{money(tx.amount)}</b><button onClick={() => startEdit(tx)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800" aria-label="Edit transaksi" title="Edit transaksi"><Edit3 size={17}/></button><button onClick={() => remove(tx.id)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600 dark:hover:bg-slate-800" aria-label="Hapus transaksi" title="Hapus transaksi"><Trash2 size={17}/></button></div></div>) : <div className="py-10 text-center text-sm text-slate-400">Belum ada transaksi.</div>}</div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-slate-400">Halaman {page} dari {totalPages}</span><div className="flex gap-2"><button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300"><ArrowRight size={16} className="rotate-180"/></button><button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300"><ArrowRight size={16}/></button></div></div>
       </div>
     </> : <form onSubmit={saveTransfer} className={`${card} grid gap-4 md:grid-cols-2`}>
-      <div className="md:col-span-2"><h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Transfer Antar Dompet</h2><p className="text-sm text-slate-400">Transfer tidak dihitung sebagai pemasukan/pengeluaran.</p></div>
-      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dompet Asal<select required className={input} value={transfer.source_wallet_id} onChange={e => setTransfer({ ...transfer, source_wallet_id: e.target.value, destination_wallet_id: transfer.destination_wallet_id === e.target.value ? '' : transfer.destination_wallet_id })}><option value="">Pilih</option>{wallets.map(w => <option key={w.id} value={w.id}>{w.name} — {money(w.balance)}</option>)}</select></label>
-      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dompet Tujuan<select required className={input} value={transfer.destination_wallet_id} onChange={e => setTransfer({ ...transfer, destination_wallet_id: e.target.value })}><option value="">Pilih</option>{wallets.filter(w => w.id !== transfer.source_wallet_id).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+      <div className="md:col-span-2"><h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Transfer Antar Dompet</h2><p className="text-sm text-slate-400">Pindahkan saldo tanpa dihitung sebagai pemasukan atau pengeluaran.</p></div>
+      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dari Dompet<select required className={input} value={transfer.source_wallet_id} onChange={e => setTransfer({ ...transfer, source_wallet_id: e.target.value })}><option value="">Pilih dompet sumber</option>{wallets.map(w => <option key={w.id} value={w.id}>{w.name} — {money(w.balance)}</option>)}</select></label>
+      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Ke Dompet<select required className={input} value={transfer.destination_wallet_id} onChange={e => setTransfer({ ...transfer, destination_wallet_id: e.target.value })}><option value="">Pilih dompet tujuan</option>{wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
       <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nominal<input required min="1" step="1" type="number" className={input} value={transfer.amount} onChange={e => setTransfer({ ...transfer, amount: e.target.value })}/></label>
       <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tanggal<input required type="date" className={input} value={transfer.transfer_date} onChange={e => setTransfer({ ...transfer, transfer_date: e.target.value })}/></label>
-      <label className="md:col-span-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Keterangan<input className={input} value={transfer.description} onChange={e => setTransfer({ ...transfer, description: e.target.value })}/></label>
-      <div className="md:col-span-2"><button disabled={busy} className={button}>{busy ? 'Menyimpan...' : <><ArrowRight size={17} className="mr-1 inline"/>Simpan Transfer</>}</button></div>
+      <label className="md:col-span-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Keterangan<input className={input} value={transfer.description} onChange={e => setTransfer({ ...transfer, description: e.target.value })} placeholder="Contoh: Pindah uang ke dompet cash"/></label>
+      <div className="md:col-span-2"><button disabled={busy} className={button}>{busy ? 'Memproses...' : 'Simpan Transfer'}</button></div>
     </form>}
   </AppShell>
 }
