@@ -13,13 +13,22 @@ import appIcon from './assets/branding/wemoney-app-icon.png'
 
 applyTheme(getInitialTheme())
 
-const favicon = document.querySelector('link[rel="icon"]')
-if (favicon) {
-  favicon.type = 'image/png'
-  favicon.href = appIcon
-}
+const iconUrl = `${appIcon}?v=1.4.3`
+const favicon = document.querySelector('link[rel="icon"]') ?? document.createElement('link')
+favicon.rel = 'icon'
+favicon.type = 'image/png'
+favicon.sizes = '1024x1024'
+favicon.href = iconUrl
+if (!favicon.parentNode) document.head.appendChild(favicon)
+
+const appleIcon = document.querySelector('link[rel="apple-touch-icon"]') ?? document.createElement('link')
+appleIcon.rel = 'apple-touch-icon'
+appleIcon.href = iconUrl
+if (!appleIcon.parentNode) document.head.appendChild(appleIcon)
 
 document.querySelector('link[rel="manifest"]')?.remove()
+
+document.title = 'We MONEY'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
