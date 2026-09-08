@@ -12,10 +12,12 @@ export default function ReceiptOcr({ disabled = false, onVerified, onCancel, aut
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const inputRef = useRef(null)
+  const autoOpenedRef = useRef(false)
 
   useEffect(() => {
-    if (!autoOpen || disabled || status !== 'idle') return
-    const timer = window.setTimeout(() => inputRef.current?.click(), 80)
+    if (!autoOpen || disabled || autoOpenedRef.current || status !== 'idle') return
+    autoOpenedRef.current = true
+    const timer = window.setTimeout(() => inputRef.current?.click(), 120)
     return () => window.clearTimeout(timer)
   }, [autoOpen, disabled, status])
 
@@ -33,9 +35,9 @@ export default function ReceiptOcr({ disabled = false, onVerified, onCancel, aut
 
   function confirm() {
     if (!result) return
-    onVerified(result); setStatus('idle'); setResult(null); setFileName(''); setProgress(0)
+    onVerified?.(result); setStatus('idle'); setResult(null); setFileName(''); setProgress(0); autoOpenedRef.current = false
   }
-  function reset() { setStatus('idle'); setResult(null); setFileName(''); setProgress(0); setError(''); onCancel?.() }
+  function reset() { setStatus('idle'); setResult(null); setFileName(''); setProgress(0); setError(''); autoOpenedRef.current = false; onCancel?.() }
   function update(key, value) { setResult(current => ({ ...current, [key]: value })) }
 
   return <div className="wm-photo-card rounded-2xl p-4 sm:p-5">
