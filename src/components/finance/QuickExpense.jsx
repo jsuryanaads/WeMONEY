@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, X, Zap } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
 import { getCategories } from '../../services/categoryService'
 import { createTransaction } from '../../services/transactionService'
 import { getWalletBalances } from '../../services/walletService'
@@ -9,6 +10,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 const initial = { amount: '', wallet_id: '', category_id: '', description: '' }
 
 export default function QuickExpense({ open, onClose }) {
+  const { user } = useAuth()
   const [wallets, setWallets] = useState([])
   const [categories, setCategories] = useState([])
   const [form, setForm] = useState(initial)
@@ -18,12 +20,12 @@ export default function QuickExpense({ open, onClose }) {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !user?.id) return
     setForm(initial)
     setError('')
     setSaved(false)
     setLoadingData(true)
-    Promise.all([getWalletBalances(), getCategories()])
+    Promise.all([getWalletBalances(user.id), getCategories(user.id)])
       .then(([walletData, categoryData]) => {
         setWallets(walletData || [])
         setCategories((categoryData || []).filter(category => category.type === 'expense'))
@@ -31,7 +33,7 @@ export default function QuickExpense({ open, onClose }) {
       })
       .catch(err => setError(err.message || 'Gagal memuat dompet dan kategori.'))
       .finally(() => setLoadingData(false))
-  }, [open])
+  }, [open, user?.id])
 
   const defaultCategory = useMemo(() => categories.find(category => category.name.toLowerCase().includes('lain'))?.id || categories[0]?.id || '', [categories])
 
@@ -43,7 +45,7 @@ export default function QuickExpense({ open, onClose }) {
       const amount = Number(form.amount)
       if (!amount || amount <= 0) throw new Error('Nominal harus lebih besar dari 0.')
       if (!form.wallet_id) throw new Error('Pilih dompet terlebih dahulu.')
-      await createTransaction(undefined, {
+      await createTransaction(user.id, {
         wallet_id: form.wallet_id,
         category_id: form.category_id || defaultCategory || null,
         type: 'expense',
@@ -76,7 +78,7 @@ export default function QuickExpense({ open, onClose }) {
         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Dompet<select required disabled={loadingData} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" value={form.wallet_id} onChange={event => setForm({ ...form, wallet_id: event.target.value })}><option value="">{loadingData ? 'Memuat dompet...' : 'Pilih dompet'}</option>{wallets.map(wallet => <option key={wallet.id} value={wallet.id}>{wallet.name} — {money(wallet.balance)}</option>)}</select></label>
         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Kategori<select disabled={loadingData} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" value={form.category_id} onChange={event => setForm({ ...form, category_id: event.target.value })}><option value="">{loadingData ? 'Memuat kategori...' : 'Pilih kategori'}</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Catatan <span className="font-normal text-slate-400">(opsional)</span><input maxLength="120" className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" placeholder="Contoh: Kopi, parkir, makan..." value={form.description} onChange={event => setForm({ ...form, description: event.target.value })}/></label>
-        <button disabled={loading || loadingData} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50"><Zap size={17} fill="currentColor" />{loading ? 'Menyimpan...' : 'Simpan Pengeluaran'}</button>
+        <button disabled={loading || loadingData || !user?.id} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50"><Zap size={17} fill="currentColor" />{loading ? 'Menyimpan...' : 'Simpan Pengeluaran'}</button>
       </form>}
     </div>
   </div>
