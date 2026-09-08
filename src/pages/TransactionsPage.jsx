@@ -5,7 +5,6 @@ import { useAuth } from '../hooks/useAuth'
 import { getWalletBalances, createTransfer } from '../services/walletService'
 import { getCategories } from '../services/categoryService'
 import { getTransactionsPage, createTransaction, updateTransaction, deleteTransaction } from '../services/transactionService'
-import { uploadReceipt } from '../services/receiptService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const today = () => new Date().toISOString().slice(0, 10)
@@ -19,7 +18,7 @@ export default function TransactionsPage() {
   const { user } = useAuth()
   const [rows, setRows] = useState([]); const [wallets, setWallets] = useState([]); const [categories, setCategories] = useState([])
   const [tab, setTab] = useState('transaction'); const [form, setForm] = useState(blankTransaction()); const [transfer, setTransfer] = useState(blankTransfer())
-  const [editing, setEditing] = useState(null); const [receiptFile, setReceiptFile] = useState(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
+  const [editing, setEditing] = useState(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   const [filters, setFilters] = useState({ search: '', type: 'all', walletId: 'all', categoryId: 'all', startDate: '', endDate: '' })
   const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(10); const [total, setTotal] = useState(0); const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -44,11 +43,9 @@ export default function TransactionsPage() {
     e.preventDefault(); setError(''); setBusy(true)
     try {
       if (Number(form.amount) <= 0) throw new Error('Nominal harus lebih besar dari 0.')
-      let receiptId = editing?.receipt_id || null
-      if (receiptFile) { const receipt = await uploadReceipt(user.id, receiptFile); receiptId = receipt.id }
-      if (editing) await updateTransaction(editing.id, user.id, { ...form, receipt_id: receiptId })
-      else await createTransaction(user.id, { ...form, receipt_id: receiptId, source: receiptId ? 'receipt' : 'manual' })
-      setForm(blankTransaction()); setEditing(null); setReceiptFile(null); await load()
+      if (editing) await updateTransaction(editing.id, user.id, { ...form, receipt_id: editing.receipt_id || null })
+      else await createTransaction(user.id, { ...form, receipt_id: null, source: 'manual' })
+      setForm(blankTransaction()); setEditing(null); await load()
     } catch (e) { setError(e.message || 'Gagal menyimpan transaksi.') }
     finally { setBusy(false) }
   }
@@ -62,9 +59,9 @@ export default function TransactionsPage() {
     try { setError(''); await deleteTransaction(id, user.id); await load() } catch (e) { setError(e.message || 'Gagal menghapus transaksi.') }
   }
   function startEdit(tx) {
-    setEditing(tx); setForm({ type: tx.type, amount: String(tx.amount ?? ''), wallet_id: tx.wallet_id ?? '', category_id: tx.category_id ?? '', transaction_date: tx.transaction_date, description: tx.description ?? '', notes: tx.notes ?? '' }); setReceiptFile(null); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setEditing(tx); setForm({ type: tx.type, amount: String(tx.amount ?? ''), wallet_id: tx.wallet_id ?? '', category_id: tx.category_id ?? '', transaction_date: tx.transaction_date, description: tx.description ?? '', notes: tx.notes ?? '' }); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-  function cancelEdit() { setEditing(null); setForm(blankTransaction()); setReceiptFile(null) }
+  function cancelEdit() { setEditing(null); setForm(blankTransaction()) }
 
   return <AppShell title="Transaksi">
     <div className="mb-6 flex gap-2"><button onClick={() => setTab('transaction')} className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === 'transaction' ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700'}`}>Transaksi</button><button onClick={() => setTab('transfer')} className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === 'transfer' ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700'}`}>Transfer</button></div>
@@ -79,7 +76,7 @@ export default function TransactionsPage() {
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tanggal<input required type="date" className={input} value={form.transaction_date} onChange={e => setForm({ ...form, transaction_date: e.target.value })}/></label>
         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Keterangan<input className={input} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Contoh: Belanja mingguan"/></label>
         <label className="md:col-span-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Catatan<textarea className={input} rows="3" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
-        <label className="md:col-span-2 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3 text-sm dark:border-slate-700"><FileText size={19} className="text-blue-500"/><span className="min-w-0 flex-1"><b className="block">Lampirkan struk</b><span className="text-xs text-slate-400">JPG, PNG, WEBP atau PDF · maksimal 10 MB{receiptFile ? ` · ${receiptFile.name}` : ''}</span></span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={e => setReceiptFile(e.target.files?.[0] || null)}/></label>
+        <div className="md:col-span-2 flex items-start gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950"><FileText size={19} className="mt-0.5 text-blue-500"/><div><b className="block text-slate-700 dark:text-slate-200">Smart Receipt / OCR</b><span className="text-xs leading-5 text-slate-400">Arsitektur baru: file struk hanya diproses sementara, tidak disimpan di Supabase Storage. Hasil OCR yang sudah diverifikasi nantinya disimpan sebagai data transaksi. Engine OCR belum diaktifkan pada versi ini.</span></div></div>
         <div className="md:col-span-2 flex flex-wrap gap-2"><button disabled={busy} className={button}>{busy ? 'Menyimpan...' : editing ? 'Simpan Perubahan' : <><Plus size={17} className="mr-1 inline"/>Simpan Transaksi</>}</button>{editing && <button type="button" onClick={cancelEdit} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300">Batal</button>}</div>
       </form>
 
