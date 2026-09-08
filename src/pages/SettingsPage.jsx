@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, BookOpen, ChevronRight, Database, Download, Smartphone, Trash2, User, UserX, X } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Database, Download, Smartphone, Trash2, User, UserX, X } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -122,7 +122,6 @@ export default function SettingsPage() {
       <SettingItem icon={Database} title="Reset Data" description="Hapus seluruh data keuangan, kategori dan akun tetap" onClick={() => setModal('reset')} />
       <SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} />
       {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
-      <SettingItem icon={BookOpen} title="Bantuan" description="Panduan singkat penggunaan We MONEY" onClick={() => { window.location.href = `${import.meta.env.BASE_URL}panduan` }} />
       {stats && remaining.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Data masih tersimpan</p><p className="mt-1 leading-6">Pengajuan hapus akun belum dapat diproses. Selesaikan data berikut: {remaining.map(([label, key]) => `${label} (${Number(stats[key] || 0).toLocaleString('id-ID')})`).join(', ')}.</p></div>}
       {stats && remaining.length === 0 && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><p className="font-extrabold">Data keuangan kosong</p><p className="mt-1 leading-6">Akun sudah memenuhi pemeriksaan data untuk mengajukan penghapusan kepada administrator.</p></div>}
     </div>
@@ -164,5 +163,5 @@ function SettingItem({ icon: Icon, title, description, onClick, danger = false, 
 }
 
 function Modal({ title, icon: Icon, children, onClose, danger = false }) {
-  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}><button type="button" aria-label="Tutup" className="absolute inset-0 cursor-default" onClick={onClose} /><div className="relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"><div className="mb-5 flex items-center gap-3"><div className={`grid h-10 w-10 place-items-center rounded-xl ${danger ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}><Icon size={19} /></div><h3 className="flex-1 text-lg font-extrabold text-slate-900">{title}</h3><button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><X size={19} /></button></div>{children}</div></div>
+  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}><button type="button" aria-label="Tutup" className="absolute inset-0 cursor-default" onClick={onClose} /><div className="relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"><div className="mb-5 flex items-center gap-3"><div className={`grid h-10 w-10 place-items-center rounded-xl ${danger ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}><Icon size={19}/></div><h3 className="flex-1 text-lg font-extrabold text-slate-900">{title}</h3><button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><X size={19} /></button></div>{children}</div></div>
 }
