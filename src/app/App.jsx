@@ -8,6 +8,7 @@ import WalletsPage from '../pages/WalletsPage'
 import ReportsPage from '../pages/ReportsPage'
 import BudgetsPage from '../pages/BudgetsPage'
 import SettingsPage from '../pages/SettingsPage'
+import TelegramPage from '../pages/TelegramPage'
 import GuidePage from '../pages/GuidePage'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
@@ -35,6 +36,7 @@ export default function App() {
       <Route path="/anggaran" element={<BudgetsPage />} />
       <Route path="/laporan" element={<ReportsPage />} />
       <Route path="/pengaturan" element={<SettingsPage />} />
+      <Route path="/telegram" element={<TelegramPage />} />
       <Route path="/panduan" element={<GuidePage />} />
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
