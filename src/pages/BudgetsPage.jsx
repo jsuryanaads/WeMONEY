@@ -21,7 +21,6 @@ export default function BudgetsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-
   const incomeValue = Number(income || 0)
   const obligationValue = Number(obligation || 0)
   const remaining = Math.max(0, incomeValue - obligationValue)
@@ -40,7 +39,6 @@ export default function BudgetsPage() {
       setCategories(c); setTransactions(t)
     } catch (e) { setError(e.message || 'Gagal memuat anggaran.') }
   }
-
   useEffect(() => { load() }, [user?.id])
   useEffect(() => { setAllocations(prev => prev.map(a => ({ ...a, amount: Math.round(remaining * Number(a.percentage || 0) / 100) }))) }, [income, obligation])
 
@@ -50,13 +48,11 @@ export default function BudgetsPage() {
       ? { ...a, percentage: n, amount: Math.round(remaining * n / 100) }
       : { ...a, amount: n, percentage: remaining > 0 ? Number((n / remaining * 100).toFixed(2)) : 0 }))
   }
-
   const savePlan = async () => {
     setSaving(true); setError(''); setNotice('')
     try {
       const saved = await saveBudgetPlan(user.id, { periodStart: monthStart(), incomeAmount: income, obligationAmount: obligation, allocations })
-      setAllocations(saved.allocations)
-      setNotice('Rencana tersimpan.')
+      setAllocations(saved.allocations); setNotice('Rencana tersimpan.')
       window.dispatchEvent(new Event('wemoney:data-changed'))
     } catch (e) { setError(e.message || 'Gagal menyimpan rencana.') }
     finally { setSaving(false) }
