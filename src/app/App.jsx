@@ -1,3 +1,4 @@
+import { Component } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
@@ -15,6 +16,22 @@ import Register from '../pages/Register'
 import ForgotPassword from '../pages/ForgotPassword'
 import ResetPassword from '../pages/ResetPassword'
 
+class AppErrorBoundary extends Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (!this.state.error) return this.props.children
+    return <div className="grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-white">
+      <div className="max-w-md">
+        <div className="mb-3 text-xl font-extrabold">We MONEY</div>
+        <p className="text-sm text-slate-300">Aplikasi mengalami kesalahan saat memuat halaman.</p>
+        <p className="mt-2 break-words text-xs text-slate-500">{this.state.error?.message || 'Kesalahan tidak diketahui'}</p>
+        <button type="button" className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white" onClick={() => window.location.reload()}>Muat ulang</button>
+      </div>
+    </div>
+  }
+}
+
 function PublicOnly({ children }) {
   const { session, loading } = useAuth()
   if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Memuat We MONEY...</div>
@@ -22,7 +39,7 @@ function PublicOnly({ children }) {
 }
 
 export default function App() {
-  return <Routes>
+  return <AppErrorBoundary><Routes>
     <Route path="/" element={<PublicOnly><Login /></PublicOnly>} />
     <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
     <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
@@ -40,5 +57,5 @@ export default function App() {
       <Route path="/panduan" element={<GuidePage />} />
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
-  </Routes>
+  </Routes></AppErrorBoundary>
 }
