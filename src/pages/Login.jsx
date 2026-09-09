@@ -24,7 +24,7 @@ export default function Login() {
     navigate('/dashboard', { replace: true })
   }
 
-  return <AuthShell title="Selamat datang kembali" subtitle="Kelola keuanganmu dengan lebih mudah.">
+  return <AuthShell title="Yuk, lanjut lagi 👋" subtitle="Catat Uangmu, Rencanakan Masa Depanmu.">
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && <div role="alert" className="rounded-xl border border-rose-800/70 bg-rose-950/50 px-4 py-3 text-sm font-semibold leading-5 text-rose-300">{error}</div>}
       <label className="block text-left"><span className="text-sm font-semibold text-slate-200">Email</span><input required type="email" autoComplete="email" value={email} onChange={(e)=>setEmail(e.target.value)} className={field} placeholder="nama@email.com" /></label>
