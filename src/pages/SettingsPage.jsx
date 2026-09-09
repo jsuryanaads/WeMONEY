@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Bot, ChevronRight, Database, Download, Smartphone, Trash2, User, UserX, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -11,6 +12,7 @@ const button = 'rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white sh
 const statItems = [['Transaksi', 'transactions'], ['Transfer', 'transfers'], ['Kategori', 'categories'], ['Dompet', 'wallets'], ['Anggaran', 'budgets'], ['Struk', 'receipts'], ['Berulang', 'recurring_transactions']]
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [name, setName] = useState(user?.user_metadata?.full_name || '')
   const [stats, setStats] = useState(null)
@@ -116,26 +118,13 @@ export default function SettingsPage() {
       <div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Pengaturan</h2><p className="mt-1 text-sm text-slate-500">Kelola akun dan data We MONEY.</p></div>
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</div>}
       {stats && <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">{statItems.map(([label, key]) => <div key={key} className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-0.5 text-lg font-extrabold text-slate-900">{Number(stats[key] || 0).toLocaleString('id-ID')}</p></div>)}</div>}
-      <SettingItem icon={Smartphone} title="Perangkat Saya" description={`${devices.length} perangkat terhubung ke akun`} onClick={() => setModal('devices')} />
-      <SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} />
-      <SettingItem icon={Bot} title="Telegram" description="Integrasi privat untuk mencatat lewat Bot Telegram" onClick={() => setModal('telegram')} />
-      <SettingItem icon={Download} title="Export" description="Backup transaksi ke CSV" onClick={exportData} disabled={busy} />
-      <SettingItem icon={Database} title="Reset Data" description="Hapus seluruh data keuangan, kategori dan akun tetap" onClick={() => setModal('reset')} />
-      <SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} />
+      <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Akun & Integrasi</p><SettingItem icon={Smartphone} title="Perangkat Saya" description={`${devices.length} perangkat terhubung ke akun`} onClick={() => setModal('devices')} /><div className="h-2"/><SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} /><div className="h-2"/><SettingItem icon={Bot} title="Telegram" description="Integrasi privat untuk mencatat lewat Bot Telegram" onClick={() => navigate('/telegram')} /></div>
+      <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Data</p><SettingItem icon={Download} title="Export" description="Backup transaksi ke CSV" onClick={exportData} disabled={busy} /><div className="h-2"/><SettingItem icon={Database} title="Reset Data" description="Hapus seluruh data keuangan, kategori dan akun tetap" onClick={() => setModal('reset')} /></div>
+      <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Zona Berbahaya</p><SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} /></div>
       {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
       {stats && remaining.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Data masih tersimpan</p><p className="mt-1 leading-6">Pengajuan hapus akun belum dapat diproses. Selesaikan data berikut: {remaining.map(([label, key]) => `${label} (${Number(stats[key] || 0).toLocaleString('id-ID')})`).join(', ')}.</p></div>}
       {stats && remaining.length === 0 && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><p className="font-extrabold">Data keuangan kosong</p><p className="mt-1 leading-6">Akun sudah memenuhi pemeriksaan data untuk mengajukan penghapusan kepada administrator.</p></div>}
     </div>
-
-    {modal === 'telegram' && <Modal title="Telegram" icon={Bot} onClose={closeModal}>
-      <div className="space-y-4">
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="font-extrabold text-slate-900">Bot Telegram We MONEY</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">Hubungkan akun secara pribadi untuk membuat catatan transaksi dari Telegram. Kode koneksi bersifat sekali pakai dan memiliki masa berlaku terbatas.</p>
-        </div>
-        <button type="button" onClick={() => { closeModal(); window.history.pushState({}, '', '/telegram'); window.dispatchEvent(new PopStateEvent('popstate')) }} className="flex w-full items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-bold text-slate-800 transition hover:bg-slate-50"><span className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-slate-600"><Bot size={18}/></span><span className="flex-1">Buka Pengaturan Bot Telegram</span><ChevronRight size={18} className="text-slate-400" /></button>
-      </div>
-    </Modal>}
 
     {modal === 'devices' && <Modal title="Perangkat Saya" icon={Smartphone} onClose={closeModal}>
       <div className="space-y-4">
