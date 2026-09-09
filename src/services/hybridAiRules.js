@@ -27,7 +27,8 @@ export const INCOME_SIGNALS = [
   ['dapat uang', 5], ['diterima', 4], ['pendapatan', 5], ['hasil usaha', 6],
   ['uang dari usaha', 6], ['income', 5], ['masuk', 3], ['gaji', 6], ['bonus', 5],
   ['cashback', 4], ['usaha', 2], ['bisnis', 2], ['membayar saya', 7], ['bayar saya', 7],
-  ['dibayar ke saya', 7], ['dibayar kepada saya', 7], ['transfer ke saya', 7]
+  ['dibayar ke saya', 7], ['dibayar kepada saya', 7], ['transfer ke saya', 7],
+  ['ke saya', 6], ['kepada saya', 6]
 ]
 
 export const EXPENSE_SIGNALS = [
