@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, Bot, Camera, CircleHelp, CreditCard, LayoutDashboard, LogOut, Menu, Palette, Settings, Tags, Target, Wallet, X, Zap } from 'lucide-react'
+import { BarChart3, Camera, CircleHelp, CreditCard, LayoutDashboard, LogOut, Menu, Palette, Settings, Tags, Target, Wallet, X, Zap } from 'lucide-react'
 import packageJson from '../../../package.json'
 import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
@@ -10,7 +10,7 @@ import QuickExpense from '../finance/QuickExpense'
 import QuickPhotoExpense from '../finance/QuickPhotoExpense'
 import WeMoneyLogo from '../brand/WeMoneyLogo'
 
-const items = [['Dashboard', '/dashboard', LayoutDashboard], ['Transaksi', '/transaksi', CreditCard], ['Kategori', '/kategori', Tags], ['Dompet', '/dompet', Wallet], ['Anggaran', '/anggaran', Target], ['Laporan', '/laporan', BarChart3], ['Telegram', '/telegram', Bot], ['Pengaturan', '/pengaturan', Settings], ['Tentang & Bantuan', '/panduan', CircleHelp]]
+const items = [['Dashboard', '/dashboard', LayoutDashboard], ['Transaksi', '/transaksi', CreditCard], ['Kategori', '/kategori', Tags], ['Dompet', '/dompet', Wallet], ['Anggaran', '/anggaran', Target], ['Laporan', '/laporan', BarChart3], ['Pengaturan', '/pengaturan', Settings], ['Tentang & Bantuan', '/panduan', CircleHelp]]
 
 export default function AppShell({ title, children }) {
   const navigate = useNavigate(); const location = useLocation(); const { user } = useAuth(); const { visualTheme, setVisualTheme } = useTheme(); const [open, setOpen] = useState(false); const [themeOpen, setThemeOpen] = useState(false); const [captureOpen, setCaptureOpen] = useState(false); const [quickExpenseOpen, setQuickExpenseOpen] = useState(false); const [quickPhotoOpen, setQuickPhotoOpen] = useState(false); const [signingOut, setSigningOut] = useState(false)
