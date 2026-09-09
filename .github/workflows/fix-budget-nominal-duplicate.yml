@@ -1,0 +1,41 @@
+name: Fix Anggaran nominal duplicate
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.head_commit.message != 'fix: remove duplicated nominal in Anggaran'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove duplicated nominal display
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/pages/BudgetsPage.jsx')
+          text = path.read_text()
+          old = '<div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2"><label className="text-xs font-semibold">{mode === \'percent\' ? \'Persentase\' : \'Nominal\'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === \'percent\' ? \'100\' : undefined} step="0.1" value={mode === \'percent\' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label><strong className="pb-2 text-sm">{money(a.amount)}</strong></div>'
+          new = '<div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2"><label className="text-xs font-semibold">{mode === \'percent\' ? \'Persentase\' : \'Nominal\'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === \'percent\' ? \'100\' : undefined} step="0.1" value={mode === \'percent\' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label><strong className="pb-2 text-sm">{mode === \'percent\' ? money(a.amount) : `${Number(a.percentage || 0).toFixed(1)}%`}</strong></div>'
+          if old not in text:
+              raise SystemExit('Target markup not found; refusing to modify the file.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit fix and remove one-shot workflow
+        run: |
+          rm -f .github/workflows/fix-budget-nominal-duplicate.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/BudgetsPage.jsx .github/workflows/fix-budget-nominal-duplicate.yml
+          git diff --cached --quiet && exit 0
+          git commit -m 'fix: remove duplicated nominal in Anggaran'
+          git push
