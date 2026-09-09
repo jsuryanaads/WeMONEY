@@ -41,6 +41,7 @@ export default function BudgetsPage() {
   }
   useEffect(() => { load() }, [user?.id])
   useEffect(() => { setAllocations(prev => prev.map(a => ({ ...a, amount: Math.round(remaining * Number(a.percentage || 0) / 100) }))) }, [income, obligation])
+
   const updateAllocation = (index, value) => {
     const n = Math.max(0, Number(value || 0))
     setAllocations(prev => prev.map((a, i) => i !== index ? a : mode === 'percent' ? { ...a, percentage: n, amount: Math.round(remaining * n / 100) } : { ...a, amount: n, percentage: remaining > 0 ? Number((n / remaining * 100).toFixed(2)) : 0 }))
@@ -54,6 +55,7 @@ export default function BudgetsPage() {
     } catch (e) { setError(e.message || 'Gagal menyimpan rencana.') }
     finally { setSaving(false) }
   }
+
   return <AppShell title="Anggaran">
     <div className="mb-4"><h2 className="text-xl font-extrabold tracking-tight">Anggaran</h2><p className="mt-0.5 text-xs text-slate-500">Rencanakan sisa uang dan lihat realisasinya.</p></div>
     {error && <div role="alert" className="wm-error mb-3">{error}</div>}
