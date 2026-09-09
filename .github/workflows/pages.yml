@@ -1,4 +1,4 @@
-name: WeMoney V1 Pages Deploy
+name: We MONEY Pages Deploy
 
 on:
   push:
@@ -20,6 +20,7 @@ env:
 
 jobs:
   build:
+    name: Build and verify artifact
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,6 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -40,6 +42,14 @@ jobs:
 
       - name: Build Vite application
         run: npm run build
+
+      - name: Verify build output
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/manifest.webmanifest
+          grep -q "We MONEY" dist/index.html
+          echo "Build artifact verification: PASS"
 
       - name: Prepare SPA fallback
         run: cp dist/index.html dist/404.html
@@ -53,6 +63,7 @@ jobs:
           path: ./dist
 
   deploy:
+    name: Deploy and production smoke test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -62,3 +73,48 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify production HTML
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          echo "Verifying ${PAGE_URL}"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 --max-time 30 "${PAGE_URL}" -o /tmp/index.html
+          grep -q "We MONEY" /tmp/index.html
+          grep -q "manifest.webmanifest" /tmp/index.html
+          echo "Production HTML: PASS"
+
+      - name: Verify production manifest
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 --max-time 30 "${PAGE_URL}manifest.webmanifest" -o /tmp/manifest.webmanifest
+          grep -q '"name": "We MONEY"' /tmp/manifest.webmanifest
+          grep -q '"start_url": "/WeMONEY/"' /tmp/manifest.webmanifest
+          echo "Production manifest: PASS"
+
+      - name: Verify production JavaScript assets
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os, re, urllib.request
+          from urllib.parse import urljoin
+          page_url = os.environ['PAGE_URL']
+          html = open('/tmp/index.html', encoding='utf-8').read()
+          assets = re.findall(r'<script[^>]+src="([^"]+)"', html)
+          if not assets:
+              raise SystemExit('No JavaScript asset found in production HTML')
+          for asset in assets:
+              url = urljoin(page_url, asset)
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  if response.status != 200:
+                      raise SystemExit(f'Asset verification failed: {url} -> {response.status}')
+              print(f'Production JS asset: PASS {url}')
+          PY
+
+      - name: Production smoke test passed
+        run: echo "We MONEY GitHub Pages deployment + verification: PASS"
