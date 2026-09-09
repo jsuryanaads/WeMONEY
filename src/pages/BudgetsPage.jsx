@@ -218,7 +218,10 @@ export default function BudgetsPage() {
           const group = GROUPS.find(g => g.key === a.group_key)
           return <div key={a.group_key} className="rounded-2xl border p-3 sm:p-4">
             <div className="flex items-start justify-between gap-3"><div className="min-w-0"><b className="text-sm sm:text-base">{group?.icon} {a.name}</b><p className="mt-0.5 text-xs text-slate-500">Terpakai {money(used)}</p></div><span className="shrink-0 text-xs font-bold text-slate-500">{Number(a.percentage || 0).toFixed(1)}%</span></div>
-            <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2"><label className="text-xs font-semibold">{mode === 'percent' ? 'Persentase' : 'Nominal'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === 'percent' ? '100' : undefined} step="0.1" value={mode === 'percent' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label><strong className="pb-2 text-sm">{money(a.amount)}</strong></div>
+            <div className={`mt-3 grid items-end gap-2 ${mode === 'percent' ? 'grid-cols-[1fr_auto]' : 'grid-cols-1'}`}>
+              <label className="text-xs font-semibold">{mode === 'percent' ? 'Persentase' : 'Nominal'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === 'percent' ? '100' : undefined} step="0.1" value={mode === 'percent' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label>
+              {mode === 'percent' && <strong className="pb-2 text-sm" aria-label="Nominal otomatis">{money(a.amount)}</strong>}
+            </div>
             <div className="wm-progress mt-3 h-2"><i style={{ width: `${Math.min(100, Math.max(0, pctUsed))}%` }} /></div>
             <div className={`mt-2 flex items-center justify-between text-xs font-bold ${over ? 'text-rose-600' : 'text-slate-500'}`}><span>{over ? 'Melebihi alokasi' : `Sisa ${money(Math.max(0, a.amount - used))}`}</span><span>{pctUsed.toFixed(0)}% terpakai</span></div>
           </div>
