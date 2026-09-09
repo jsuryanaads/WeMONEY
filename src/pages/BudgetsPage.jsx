@@ -3,7 +3,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { getCategories } from '../services/categoryService'
 import { getTransactions } from '../services/transactionService'
-import { DEFAULT_ALLOCATION, GROUPS, calculateGroupUsage, getBudgetPlan, saveBudgetPlan } from '../services/budgetPlanningService'
+import { DEFAULT_ALLOCATION, calculateGroupUsage, getBudgetPlan, saveBudgetPlan } from '../services/budgetPlanningService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const monthStart = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01` }
