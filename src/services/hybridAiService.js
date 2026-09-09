@@ -1,15 +1,4 @@
-import { INCOME_RULES, EXPENSE_RULES, INCOME_SIGNALS, EXPENSE_SIGNALS, normalize, canonicalCategoryName } from './hybridAiRules'
-
-function inferType(text) {
-  const lower = normalize(text)
-  let incomeScore = 0
-  let expenseScore = 0
-  for (const [term, score] of INCOME_SIGNALS) if (lower.includes(term)) incomeScore += score
-  for (const [term, score] of EXPENSE_SIGNALS) if (lower.includes(term)) expenseScore += score
-  if (incomeScore > expenseScore && incomeScore > 0) return 'income'
-  if (expenseScore > 0) return 'expense'
-  return 'expense'
-}
+import { INCOME_RULES, EXPENSE_RULES, normalize, canonicalCategoryName, inferTransactionType } from './hybridAiRules'
 
 function matchCategory(text, type, categories) {
   const pool = (categories || []).filter(item => item.type === type && item.is_active !== false)
@@ -51,12 +40,12 @@ function extractDate(text) {
 
 export function classifyTransaction({ text = '', amount = 0, date = '', categories = [], wallets = [], merchant = '' } = {}) {
   const source = [text, merchant].filter(Boolean).join(' ')
-  const type = inferType(source)
-  const category = matchCategory(source, type, categories)
+  const intent = inferTransactionType(source)
+  const category = matchCategory(source, intent.type, categories)
   const wallet = matchWallet(source, wallets)
-  const confidence = Math.min(category.confidence || 0, wallet.confidence || 0)
+  const confidence = Math.min(intent.confidence, category.confidence || 0, wallet.confidence || 0)
   return {
-    type,
+    type: intent.type,
     amount: Number(amount) || 0,
     transaction_date: date || extractDate(source) || new Date().toLocaleDateString('en-CA'),
     description: String(text || merchant || '').trim().slice(0, 180),
@@ -64,8 +53,8 @@ export function classifyTransaction({ text = '', amount = 0, date = '', categori
     categoryId: category.categoryId,
     walletId: wallet.walletId,
     classificationConfidence: confidence,
-    classificationSource: 'hybrid-shared-v3',
-    classificationExplanation: `${category.explanation} ${wallet.explanation}`,
+    classificationSource: 'hybrid-shared-v4',
+    classificationExplanation: `Intent ${intent.type === 'income' ? 'pemasukan' : 'pengeluaran'} (skor masuk ${intent.incomeScore} vs keluar ${intent.expenseScore}). ${category.explanation} ${wallet.explanation}`,
   }
 }
 
