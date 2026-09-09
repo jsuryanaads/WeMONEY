@@ -30,14 +30,35 @@ export default function BudgetsPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  const remaining = Math.max(0, Number(income || 0) - Number(obligation || 0))
+  const incomeValue = Number(income || 0)
+  const obligationValue = Number(obligation || 0)
+  const remaining = Math.max(0, incomeValue - obligationValue)
+  const obligationRatio = incomeValue > 0 ? obligationValue / incomeValue * 100 : 0
   const totalPct = allocations.reduce((s, a) => s + Number(a.percentage || 0), 0)
   const totalAmount = allocations.reduce((s, a) => s + Number(a.amount || 0), 0)
+  const allocationComplete = remaining === 0 || Math.abs(totalPct - 100) < 0.01
   const groupUsage = useMemo(() => calculateGroupUsage(transactions, categories, monthStart(), monthEnd()), [transactions, categories])
-  const totalGroupUsed = GROUPS.reduce((sum, group) => sum + Number(groupUsage[group.key] || 0), 0)
   const overGroups = allocations.filter(a => Number(groupUsage[a.group_key] || 0) > Number(a.amount || 0)).length
-  const financialStatus = overGroups > 0 ? 'Melebihi rencana' : totalAmount > 0 && totalGroupUsed / totalAmount >= 0.9 ? 'Perlu diperhatikan' : 'Aman'
-  const financialStatusTone = overGroups > 0 ? 'text-rose-700 bg-rose-50 border-rose-200' : financialStatus === 'Perlu diperhatikan' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+  const trackedSpending = ['needs', 'lifestyle', 'flexible'].reduce((sum, key) => sum + Number(groupUsage[key] || 0), 0)
+  const spendingRatio = totalAmount > 0 ? trackedSpending / totalAmount * 100 : 0
+  const financialStatus = !incomeValue
+    ? 'Belum diatur'
+    : overGroups > 0
+      ? 'Melebihi rencana'
+      : obligationRatio > 60
+        ? 'Perlu diperhatikan'
+        : !allocationComplete
+          ? 'Perlu diatur'
+          : spendingRatio >= 90
+            ? 'Perlu diperhatikan'
+            : 'Aman'
+  const financialStatusTone = financialStatus === 'Melebihi rencana'
+    ? 'text-rose-700 bg-rose-50 border-rose-200'
+    : financialStatus === 'Perlu diperhatikan' || financialStatus === 'Perlu diatur'
+      ? 'text-amber-700 bg-amber-50 border-amber-200'
+      : financialStatus === 'Belum diatur'
+        ? 'text-slate-600 bg-slate-50 border-slate-200'
+        : 'text-emerald-700 bg-emerald-50 border-emerald-200'
 
   const load = async () => {
     if (!user?.id) return
@@ -154,23 +175,29 @@ export default function BudgetsPage() {
     {notice && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{notice}</div>}
 
     <section className="wm-panel mb-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="wm-metric-icon"><Target size={18} /></span>
-          <div><h3 className="font-extrabold">Rencana Bulanan</h3><p className="text-xs text-slate-500">Rekomendasi boleh diubah kapan saja.</p></div>
+          <div className="min-w-0"><h3 className="font-extrabold">Rencana Bulanan</h3><p className="text-xs text-slate-500">Atur uangmu sebelum digunakan.</p></div>
         </div>
-        <span className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-extrabold ${financialStatusTone}`}>{financialStatus}</span>
+        <span className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-extrabold ${financialStatusTone}`}>{financialStatus}</span>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <label className="text-sm font-semibold">Pendapatan / Gaji<input className="wm-input mt-1.5 w-full" type="number" min="0" value={income} onChange={e => setIncome(e.target.value)} placeholder="3.000.000" /></label>
-        <label className="text-sm font-semibold">Kewajiban / Cicilan<input className="wm-input mt-1.5 w-full" type="number" min="0" value={obligation} onChange={e => setObligation(e.target.value)} placeholder="1.500.000" /></label>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <label className="text-sm font-semibold">Pendapatan bulan ini<input className="wm-input mt-1.5 w-full" type="number" min="0" value={income} onChange={e => setIncome(e.target.value)} placeholder="4.800.000" /></label>
+        <label className="text-sm font-semibold">Kewajiban tetap<input className="wm-input mt-1.5 w-full" type="number" min="0" value={obligation} onChange={e => setObligation(e.target.value)} placeholder="2.200.000" /><span className="mt-1 block text-[11px] font-normal text-slate-500">Cicilan, tagihan tetap, dan kewajiban lainnya.</span></label>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3">
         <div className="min-w-0"><span className="text-[11px] text-slate-500">Pendapatan</span><strong className="block truncate text-sm sm:text-base">{money(income)}</strong></div>
         <div className="min-w-0"><span className="text-[11px] text-slate-500">Kewajiban</span><strong className="block truncate text-sm sm:text-base">{money(obligation)}</strong></div>
-        <div className="min-w-0"><span className="text-[11px] text-slate-500">Sisa</span><strong className="block truncate text-sm text-blue-600 sm:text-base">{money(remaining)}</strong></div>
+        <div className="min-w-0"><span className="text-[11px] text-slate-500">Rasio kewajiban</span><strong className="block truncate text-sm sm:text-base">{incomeValue ? `${obligationRatio.toFixed(1)}%` : '—'}</strong></div>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+        <span className="text-xs font-bold text-slate-500">Sisa siap dibagi</span>
+        <strong className="mt-0.5 block text-2xl font-extrabold tracking-tight text-blue-700 sm:text-3xl">{money(remaining)}</strong>
+        <p className="mt-0.5 text-xs text-slate-500">Inilah uang yang bisa dialokasikan ke kebutuhan, tabungan, dana darurat, dan hiburan.</p>
       </div>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -198,8 +225,8 @@ export default function BudgetsPage() {
         })}
       </div>
 
-      <div className={`mt-3 flex flex-col gap-1 rounded-xl px-3 py-2.5 text-xs font-bold sm:flex-row sm:items-center sm:justify-between ${remaining === 0 || Math.abs(totalPct - 100) < 0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}><span>Total alokasi: {totalPct.toFixed(1)}% · {money(totalAmount)}</span><span>{remaining === 0 ? 'Tidak ada sisa yang perlu dialokasikan' : Math.abs(totalPct - 100) < 0.01 ? 'Semua sisa sudah dialokasikan' : 'Atur total menjadi 100%'}</span></div>
-      <button disabled={saving || (remaining > 0 && Math.abs(totalPct - 100) > 0.01)} onClick={savePlan} className="wm-primary mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold sm:w-auto"><CheckCircle2 size={17} />{saving ? 'Menyimpan...' : 'Simpan Rencana'}</button>
+      <div className={`mt-3 flex flex-col gap-1 rounded-xl px-3 py-2.5 text-xs font-bold sm:flex-row sm:items-center sm:justify-between ${allocationComplete ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}><span>Total alokasi: {totalPct.toFixed(1)}% · {money(totalAmount)}</span><span>{remaining === 0 ? 'Tidak ada sisa yang perlu dialokasikan' : allocationComplete ? 'Semua sisa sudah dialokasikan' : 'Atur total menjadi 100%'}</span></div>
+      <button disabled={saving || (remaining > 0 && !allocationComplete)} onClick={savePlan} className="wm-primary mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold sm:w-auto"><CheckCircle2 size={17} />{saving ? 'Menyimpan...' : 'Simpan Rencana'}</button>
     </section>
 
     <section className="mb-5 grid gap-4 lg:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.5fr)]">
