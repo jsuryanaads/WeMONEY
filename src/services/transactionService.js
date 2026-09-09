@@ -38,6 +38,7 @@ function validateTransactionPayload(payload) {
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('Nominal harus lebih besar dari 0.')
   if (!['income', 'expense'].includes(payload.type)) throw new Error('Jenis transaksi tidak valid.')
   if (!payload.transaction_date) throw new Error('Tanggal transaksi wajib diisi.')
+  if (!payload.wallet_id) throw new Error('Dompet wajib dipilih.')
   return amount
 }
 
@@ -45,7 +46,7 @@ export async function createTransaction(userId, payload) {
   const amount = validateTransactionPayload(payload)
   const deviceId = getDeviceId()
   const deviceName = getDeviceName()
-  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, source: payload.source || 'manual', receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName }).select(SELECT).single()
+  const { data, error } = await supabase.from('transactions').insert({ user_id: userId, wallet_id: payload.wallet_id, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, source: payload.source || 'manual', receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName }).select(SELECT).single()
   if (error) throw error
   return data
 }
@@ -54,7 +55,7 @@ export async function updateTransaction(id, userId, payload) {
   const amount = validateTransactionPayload(payload)
   const deviceId = getDeviceId()
   const deviceName = getDeviceName()
-  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id || null, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
+  const { data, error } = await supabase.from('transactions').update({ wallet_id: payload.wallet_id, category_id: payload.category_id || null, type: payload.type, amount, transaction_date: payload.transaction_date, description: payload.description?.trim() || null, notes: payload.notes?.trim() || null, receipt_id: payload.receipt_id || null, device_id: deviceId, device_name: deviceName, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select(SELECT).single()
   if (error) throw error
   return data
 }
