@@ -8,6 +8,7 @@ import './styles/typography.css'
 import './styles/wemoney-v2.css'
 import './styles/accessibility.css'
 import './styles/capture-menu.css'
+import './styles/quick-capture.css'
 import { applyTheme, getInitialTheme } from './hooks/useTheme'
 import appIcon from './assets/branding/wemoney-app-icon.png'
 
