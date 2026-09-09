@@ -4,7 +4,7 @@ const INCOME_RULES = [
   ['Gaji', ['gaji', 'salary', 'upah', 'payroll']],
   ['Bonus', ['bonus', 'thr', 'insentif']],
   ['Penjualan', ['penjualan', 'hasil jual', 'hasil penjualan', 'jual']],
-  ['Usaha', ['usaha', 'omzet', 'pendapatan usaha']],
+  ['Usaha', ['usaha', 'omzet', 'pendapatan usaha', 'hasil usaha']],
   ['Fee', ['fee', 'honor', 'komisi']],
   ['Cashback', ['cashback', 'cash back']],
 ]
@@ -51,7 +51,8 @@ function matchWallet(text, wallets) {
 
 function inferType(text) {
   const lower = normalize(text)
-  if (/\b(pemasukan|income|masuk|gaji|bonus|terima|diterima|pendapatan|cashback)\b/.test(lower)) return 'income'
+  if (/\b(uang\s+masuk|uang\s+diterima|uang\s+dapat|uang\s+masuknya|dapat\s+uang|terima\s+uang|terima\s+gaji|diterima|pemasukan|income|masuk|gaji|bonus|pendapatan|cashback)\b/.test(lower)) return 'income'
+  if (/\b(uang\s+keluar|uang\s+dibayar|pengeluaran|expense|keluar|bayar|membayar)\b/.test(lower)) return 'expense'
   return 'expense'
 }
 
