@@ -1,9 +1,17 @@
 import { supabase } from '../lib/supabase'
 
+function requireRpcData(data, error, fallback) {
+  if (error) throw new Error(error.message || fallback)
+  if (data == null) throw new Error(fallback)
+  return data
+}
+
 export async function createTelegramLinkCode() {
   const { data, error } = await supabase.rpc('create_telegram_link_code')
-  if (error) throw error
-  return data?.[0] || data
+  const result = requireRpcData(data, error, 'Gagal membuat kode koneksi Telegram.')
+  const code = Array.isArray(result) ? result[0] : result
+  if (!code?.code) throw new Error('Kode koneksi Telegram tidak berhasil dibuat.')
+  return code
 }
 
 export async function getTelegramConnection() {
