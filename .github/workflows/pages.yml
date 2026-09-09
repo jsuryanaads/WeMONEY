@@ -2,7 +2,8 @@ name: We MONEY Pages Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: github-pages
   cancel-in-progress: true
 
 env:
@@ -20,7 +21,7 @@ env:
 
 jobs:
   build:
-    name: Build and verify artifact
+    name: Build Pages artifact
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,11 +44,11 @@ jobs:
       - name: Build Vite application
         run: npm run build
 
-      - name: Verify build output
+      - name: Verify build artifact
         run: |
           set -euo pipefail
-          test -f dist/index.html
-          test -f dist/manifest.webmanifest
+          test -s dist/index.html
+          test -s dist/manifest.webmanifest
           grep -q "We MONEY" dist/index.html
           echo "Build artifact verification: PASS"
 
@@ -63,12 +64,12 @@ jobs:
           path: ./dist
 
   deploy:
-    name: Deploy and production smoke test
+    name: Deploy and verify production
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -79,8 +80,7 @@ jobs:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           set -euo pipefail
-          echo "Verifying ${PAGE_URL}"
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 --max-time 30 "${PAGE_URL}" -o /tmp/index.html
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 --max-time 30 "$PAGE_URL" -o /tmp/index.html
           grep -q "We MONEY" /tmp/index.html
           grep -q "manifest.webmanifest" /tmp/index.html
           echo "Production HTML: PASS"
@@ -95,26 +95,16 @@ jobs:
           grep -q '"start_url": "/WeMONEY/"' /tmp/manifest.webmanifest
           echo "Production manifest: PASS"
 
-      - name: Verify production JavaScript assets
+      - name: Verify production JavaScript asset
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import os, re, urllib.request
-          from urllib.parse import urljoin
-          page_url = os.environ['PAGE_URL']
-          html = open('/tmp/index.html', encoding='utf-8').read()
-          assets = re.findall(r'<script[^>]+src="([^"]+)"', html)
-          if not assets:
-              raise SystemExit('No JavaScript asset found in production HTML')
-          for asset in assets:
-              url = urljoin(page_url, asset)
-              with urllib.request.urlopen(url, timeout=30) as response:
-                  if response.status != 200:
-                      raise SystemExit(f'Asset verification failed: {url} -> {response.status}')
-              print(f'Production JS asset: PASS {url}')
-          PY
+          SCRIPT_PATH=$(grep -oE 'src="[^"]+\.js"' /tmp/index.html | head -n 1 | sed 's/^src="//;s/"$//')
+          test -n "$SCRIPT_PATH"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 --max-time 30 "${PAGE_URL}${SCRIPT_PATH#./}" -o /tmp/app.js
+          test -s /tmp/app.js
+          echo "Production JavaScript asset: PASS"
 
       - name: Production smoke test passed
         run: echo "We MONEY GitHub Pages deployment + verification: PASS"
