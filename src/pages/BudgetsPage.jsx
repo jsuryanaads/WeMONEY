@@ -111,7 +111,7 @@ export default function BudgetsPage() {
   const recommend = () => {
     setAllocations(GROUPS.map((g, i) => ({ group_key: g.key, name: g.name, percentage: g.defaultPct, amount: Math.round(remaining * g.defaultPct / 100), sort_order: i })))
     setMode('percent')
-    setNotice('Rekomendasi diterapkan. Kamu tetap bebas mengubahnya.')
+    setNotice('Rekomendasi AI diterapkan. Kamu tetap bebas mengubahnya.')
   }
 
   const savePlan = async () => {
@@ -168,7 +168,7 @@ export default function BudgetsPage() {
   return <AppShell title="Anggaran">
     <div className="mb-4">
       <h2 className="text-2xl font-extrabold tracking-tight">Anggaran</h2>
-      <p className="mt-1 max-w-2xl text-sm text-slate-500">Tentukan uang yang masuk, kewajiban, lalu bagi sisanya sebelum uang habis.</p>
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">Rencanakan uang masuk, kewajiban, lalu bagi sisanya sebelum digunakan.</p>
     </div>
 
     {error && <div role="alert" className="wm-error mb-4">{error}</div>}
@@ -178,14 +178,14 @@ export default function BudgetsPage() {
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="wm-metric-icon"><Target size={18} /></span>
-          <div className="min-w-0"><h3 className="font-extrabold">Rencana Bulanan</h3><p className="text-xs text-slate-500">Atur uangmu sebelum digunakan.</p></div>
+          <div className="min-w-0"><h3 className="font-extrabold">Rencana Bulanan</h3><p className="text-xs text-slate-500">Pendapatan → kewajiban → sisa yang siap dibagi.</p></div>
         </div>
         <span className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-extrabold ${financialStatusTone}`}>{financialStatus}</span>
       </div>
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <label className="text-sm font-semibold">Pendapatan bulan ini<input className="wm-input mt-1.5 w-full" type="number" min="0" value={income} onChange={e => setIncome(e.target.value)} placeholder="4.800.000" /></label>
-        <label className="text-sm font-semibold">Kewajiban tetap<input className="wm-input mt-1.5 w-full" type="number" min="0" value={obligation} onChange={e => setObligation(e.target.value)} placeholder="2.200.000" /><span className="mt-1 block text-[11px] font-normal text-slate-500">Cicilan, tagihan tetap, dan kewajiban lainnya.</span></label>
+        <label className="text-sm font-semibold">Pendapatan<input className="wm-input mt-1.5 w-full" type="number" min="0" value={income} onChange={e => setIncome(e.target.value)} placeholder="4.800.000" /></label>
+        <label className="text-sm font-semibold">Kewajiban<input className="wm-input mt-1.5 w-full" type="number" min="0" value={obligation} onChange={e => setObligation(e.target.value)} placeholder="2.200.000" /><span className="mt-1 block text-[11px] font-normal text-slate-500">Cicilan, tagihan tetap, dan kewajiban lainnya.</span></label>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3">
@@ -194,36 +194,38 @@ export default function BudgetsPage() {
         <div className="min-w-0"><span className="text-[11px] text-slate-500">Rasio kewajiban</span><strong className="block truncate text-sm sm:text-base">{incomeValue ? `${obligationRatio.toFixed(1)}%` : '—'}</strong></div>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-        <span className="text-xs font-bold text-slate-500">Sisa siap dibagi</span>
-        <strong className="mt-0.5 block text-2xl font-extrabold tracking-tight text-blue-700 sm:text-3xl">{money(remaining)}</strong>
-        <p className="mt-0.5 text-xs text-slate-500">Inilah uang yang bisa dialokasikan ke kebutuhan, tabungan, dana darurat, dan hiburan.</p>
+      <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-600 px-4 py-4 text-white shadow-sm">
+        <span className="text-xs font-bold uppercase tracking-wide text-blue-100">Sisa siap dibagi</span>
+        <strong className="mt-0.5 block text-2xl font-extrabold tracking-tight sm:text-3xl">{money(remaining)}</strong>
+        <p className="mt-1 text-xs text-blue-100">Uang yang bisa dialokasikan ke kebutuhan pokok, tabungan, dana darurat, dan hiburan.</p>
+      </div>
+    </section>
+
+    <section className="wm-panel mb-4">
+      <div className="flex items-start justify-between gap-3">
+        <div><h3 className="font-extrabold">Bagi Sisa Uang</h3><p className="mt-0.5 text-xs text-slate-500">Pilih persentase atau nominal. Nilai lainnya dihitung otomatis.</p></div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex w-fit rounded-xl border p-1">
-          <button type="button" onClick={() => setMode('percent')} className={`rounded-lg px-3 py-2 text-xs font-extrabold ${mode === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>% Persentase</button>
-          <button type="button" onClick={() => setMode('nominal')} className={`rounded-lg px-3 py-2 text-xs font-extrabold ${mode === 'nominal' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Rp Nominal</button>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex w-full rounded-xl border p-1 sm:w-fit">
+          <button type="button" onClick={() => setMode('percent')} className={`flex-1 rounded-lg px-3 py-2 text-xs font-extrabold sm:flex-none ${mode === 'percent' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>% Persentase</button>
+          <button type="button" onClick={() => setMode('nominal')} className={`flex-1 rounded-lg px-3 py-2 text-xs font-extrabold sm:flex-none ${mode === 'nominal' ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Rp Nominal</button>
         </div>
-        <button type="button" onClick={recommend} className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-extrabold sm:w-auto"><Sparkles size={16} /> Rekomendasikan untuk Saya</button>
+        <button type="button" onClick={recommend} className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-extrabold sm:w-auto"><Sparkles size={16} /> Rekomendasi AI</button>
       </div>
 
-      <div className="mt-4 mb-2"><h4 className="text-sm font-extrabold">Bagi Sisa Uang</h4><p className="text-xs text-slate-500">Masukkan persentase atau nominal. Nilai lainnya dihitung otomatis.</p></div>
-
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="mt-3 grid gap-2.5 md:grid-cols-2">
         {allocations.map((a, i) => {
-          const used = Number(groupUsage[a.group_key] || 0)
-          const pctUsed = a.amount > 0 ? used / a.amount * 100 : 0
-          const over = used > a.amount && a.amount >= 0
           const group = GROUPS.find(g => g.key === a.group_key)
-          return <div key={a.group_key} className="rounded-2xl border p-3 sm:p-4">
-            <div className="flex items-start justify-between gap-3"><div className="min-w-0"><b className="text-sm sm:text-base">{group?.icon} {a.name}</b><p className="mt-0.5 text-xs text-slate-500">Terpakai {money(used)}</p></div><span className="shrink-0 text-xs font-bold text-slate-500">{Number(a.percentage || 0).toFixed(1)}%</span></div>
-            <div className={`mt-3 grid items-end gap-2 ${mode === 'percent' ? 'grid-cols-[1fr_auto]' : 'grid-cols-1'}`}>
-              <label className="text-xs font-semibold">{mode === 'percent' ? 'Persentase' : 'Nominal'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === 'percent' ? '100' : undefined} step="0.1" value={mode === 'percent' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label>
-              {mode === 'percent' && <strong className="pb-2 text-sm" aria-label="Nominal otomatis">{money(a.amount)}</strong>}
+          return <div key={a.group_key} className="rounded-2xl border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0"><b className="text-sm sm:text-base">{group?.icon} {a.name}</b><p className="mt-0.5 text-xs text-slate-500">Alokasi untuk bulan ini</p></div>
+              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-extrabold">{Number(a.percentage || 0).toFixed(1)}%</span>
             </div>
-            <div className="wm-progress mt-3 h-2"><i style={{ width: `${Math.min(100, Math.max(0, pctUsed))}%` }} /></div>
-            <div className={`mt-2 flex items-center justify-between text-xs font-bold ${over ? 'text-rose-600' : 'text-slate-500'}`}><span>{over ? 'Melebihi alokasi' : `Sisa ${money(Math.max(0, a.amount - used))}`}</span><span>{pctUsed.toFixed(0)}% terpakai</span></div>
+            <div className="mt-2 grid grid-cols-[1fr_auto] items-end gap-2">
+              <label className="text-xs font-semibold">{mode === 'percent' ? 'Persentase' : 'Nominal'}<input className="wm-input mt-1 w-full" type="number" min="0" max={mode === 'percent' ? '100' : undefined} step="0.1" value={mode === 'percent' ? a.percentage : a.amount} onChange={e => updateAllocation(i, e.target.value)} /></label>
+              <strong className="pb-2 text-sm" aria-label={mode === 'percent' ? 'Nominal otomatis' : 'Persentase otomatis'}>{mode === 'percent' ? money(a.amount) : `${Number(a.percentage || 0).toFixed(1)}%`}</strong>
+            </div>
           </div>
         })}
       </div>
@@ -232,9 +234,30 @@ export default function BudgetsPage() {
       <button disabled={saving || (remaining > 0 && !allocationComplete)} onClick={savePlan} className="wm-primary mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold sm:w-auto"><CheckCircle2 size={17} />{saving ? 'Menyimpan...' : 'Simpan Rencana'}</button>
     </section>
 
+    <section className="wm-panel mb-4">
+      <div className="flex items-start justify-between gap-3">
+        <div><h3 className="font-extrabold">Realisasi Transaksi</h3><p className="mt-0.5 text-xs text-slate-500">Bandingkan alokasi rencana dengan transaksi nyata bulan ini.</p></div>
+      </div>
+      <div className="mt-3 grid gap-2.5 md:grid-cols-2">
+        {allocations.map(a => {
+          const group = GROUPS.find(g => g.key === a.group_key)
+          const planned = Number(a.amount || 0)
+          const actual = Number(groupUsage[a.group_key] || 0)
+          const usedPct = planned > 0 ? actual / planned * 100 : actual > 0 ? 100 : 0
+          const over = actual > planned
+          return <article key={`realization-${a.group_key}`} className="rounded-2xl border p-3">
+            <div className="flex items-center justify-between gap-3"><b className="text-sm">{group?.icon} {a.name}</b><span className={`text-xs font-extrabold ${over ? 'text-rose-600' : 'text-slate-500'}`}>{usedPct.toFixed(0)}% terpakai</span></div>
+            <div className="mt-2 flex items-end justify-between gap-3"><div><span className="block text-[11px] text-slate-500">Realisasi</span><strong className="text-base">{money(actual)}</strong></div><div className="text-right"><span className="block text-[11px] text-slate-500">Rencana</span><strong className="text-sm">{money(planned)}</strong></div></div>
+            <div className="wm-progress mt-2 h-2"><i style={{ width: `${Math.min(100, Math.max(0, usedPct))}%` }} /></div>
+            <div className={`mt-2 text-xs font-bold ${over ? 'text-rose-600' : 'text-slate-500'}`}>{over ? `Melebihi ${money(actual - planned)}` : `Sisa ${money(planned - actual)}`}</div>
+          </article>
+        })}
+      </div>
+    </section>
+
     <section className="mb-5 grid gap-4 lg:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.5fr)]">
       <form onSubmit={saveLegacy} className="wm-panel h-fit">
-        <div className="wm-panel-head"><div><h3>{editing ? 'Edit Batas Pengeluaran' : 'Batas Pengeluaran Detail'}</h3><p>Opsional untuk membatasi kategori atau kebutuhan tertentu.</p></div><Plus size={18} /></div>
+        <div className="wm-panel-head"><div><h3>{editing ? 'Edit Anggaran Detail' : 'Anggaran Detail'}</h3><p>Opsional untuk membatasi kategori atau kebutuhan tertentu.</p></div><Plus size={18} /></div>
         <div className="mt-4 grid gap-3">
           <input required className="wm-input" placeholder="Nama, contoh: Tagihan" value={legacyForm.name} onChange={e => setLegacyForm({ ...legacyForm, name: e.target.value })} />
           <input required className="wm-input" type="number" min="1" value={legacyForm.amount} onChange={e => setLegacyForm({ ...legacyForm, amount: e.target.value })} placeholder="Nominal batas" />
@@ -247,7 +270,7 @@ export default function BudgetsPage() {
       </form>
 
       <div className="space-y-3">
-        {!loading && budgets.length === 0 && <div className="wm-panel text-sm text-slate-500">Belum ada batas pengeluaran detail. Kamu bisa mengandalkan Rencana Bulanan di atas.</div>}
+        {!loading && budgets.length === 0 && <div className="wm-panel text-sm text-slate-500">Belum ada anggaran detail. Rencana Bulanan di atas tetap menjadi perencanaan utama.</div>}
         {loading ? <div className="wm-panel">Memuat anggaran...</div> : budgets.map(b => {
           const u = calculateBudgetUsage(b, transactions)
           const danger = u.exceeded || u.percent >= 90
