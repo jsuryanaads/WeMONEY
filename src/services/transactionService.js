@@ -51,6 +51,17 @@ export async function createTransaction(userId, payload) {
   return data
 }
 
+export async function createQuickTransactions(userId, items) {
+  if (!userId) throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.')
+  if (!Array.isArray(items) || !items.length) throw new Error('Belum ada transaksi untuk disimpan.')
+  const deviceId = getDeviceId()
+  const deviceName = getDeviceName()
+  const payload = items.map(item => ({ ...item, device_id: deviceId, device_name: deviceName }))
+  const { data, error } = await supabase.rpc('create_quick_transactions', { p_items: payload })
+  if (error) throw error
+  return data
+}
+
 export async function updateTransaction(id, userId, payload) {
   const amount = validateTransactionPayload(payload)
   const deviceId = getDeviceId()
