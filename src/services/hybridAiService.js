@@ -4,7 +4,7 @@ const INCOME_RULES = [
   ['Gaji', ['gaji', 'salary', 'upah', 'payroll']],
   ['Bonus', ['bonus', 'thr', 'insentif']],
   ['Penjualan', ['penjualan', 'hasil jual', 'hasil penjualan', 'jual']],
-  ['Usaha', ['usaha', 'omzet', 'pendapatan usaha', 'hasil usaha']],
+  ['Usaha', ['usaha', 'omzet', 'pendapatan usaha', 'uang masuk dari usaha', 'hasil usaha']],
   ['Fee', ['fee', 'honor', 'komisi']],
   ['Cashback', ['cashback', 'cash back']],
 ]
@@ -24,6 +24,19 @@ const EXPENSE_RULES = [
   ['Belanja', ['belanja', 'beli', 'shopping', 'indomaret', 'alfamart']],
 ]
 
+const CATEGORY_ALIASES = {
+  'Makanan & Minuman': ['makanan & minuman', 'makanan', 'minuman'],
+  'Perawatan Kendaraan': ['perawatan kendaraan', 'servis kendaraan', 'service kendaraan'],
+  'Suku Cadang': ['suku cadang', 'sparepart', 'spare part'],
+  'Transportasi Online': ['transportasi online', 'ojek online', 'ojol'],
+}
+
+function categoryNameMatches(actual, ruleName) {
+  const n = normalize(actual)
+  const aliases = CATEGORY_ALIASES[ruleName] || [ruleName]
+  return aliases.some(alias => n === normalize(alias))
+}
+
 function matchCategory(text, type, categories) {
   const pool = (categories || []).filter(item => item.type === type && item.is_active !== false)
   if (!pool.length) return { categoryId: '', confidence: 0, explanation: 'Belum ada kategori aktif untuk jenis transaksi ini.' }
@@ -33,7 +46,7 @@ function matchCategory(text, type, categories) {
   const rules = type === 'income' ? INCOME_RULES : EXPENSE_RULES
   for (const [name, patterns] of rules) {
     if (!patterns.some(pattern => lower.includes(pattern))) continue
-    const category = pool.find(item => normalize(item.name) === normalize(name))
+    const category = pool.find(item => categoryNameMatches(item.name, name))
     if (category) return { categoryId: category.id, confidence: 0.91, explanation: `Konteks transaksi cocok dengan kategori “${category.name}”.` }
   }
   return { categoryId: '', confidence: 0.35, explanation: 'Kategori belum cukup yakin. Pilih manual sebelum menyimpan.' }
