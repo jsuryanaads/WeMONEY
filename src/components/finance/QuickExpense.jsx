@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check, Trash2, X, Zap } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategories } from '../../services/categoryService'
-import { createTransaction } from '../../services/transactionService'
+import { createQuickTransactions } from '../../services/transactionService'
 import { getWalletBalances } from '../../services/walletService'
 import { money, parseQuickItems } from '../../services/quickCaptureService'
 
-const today = () => new Date().toISOString().slice(0, 10)
+const localToday = () => {
+  const date = new Date()
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10)
+}
 
 function confidenceLabel(value) {
   if (value >= 0.9) return 'Otomatis'
@@ -79,14 +83,12 @@ export default function QuickExpense({ open, onClose }) {
       if (!wallets.length) throw new Error('Belum ada dompet aktif.')
       if (!items.length) throw new Error('Belum ada transaksi untuk disimpan.')
       if (items.some(item => !item.description || !item.amount || item.amount <= 0 || !item.walletId || !item.categoryId)) throw new Error('Lengkapi keterangan, nominal, dompet, dan kategori setiap transaksi.')
-      for (const item of items) {
-        await createTransaction(user.id, { wallet_id: item.walletId, category_id: item.categoryId, type: item.type, amount: item.amount, transaction_date: today(), description: item.description, notes: null, source: 'quick_input' })
-      }
+      await createQuickTransactions(user.id, items.map(item => ({ wallet_id: item.walletId, category_id: item.categoryId, type: item.type, amount: item.amount, transaction_date: localToday(), description: item.description, notes: null, source: 'quick_input' })))
       setSaved(true)
       window.dispatchEvent(new Event('wemoney:data-changed'))
       setTimeout(onClose, 800)
     } catch (err) {
-      setError(err.message || 'Gagal menyimpan transaksi.')
+      setError(err.message || 'Gagal menyimpan transaksi. Tidak ada transaksi yang disimpan jika proses gagal.')
     } finally {
       setLoading(false)
     }
