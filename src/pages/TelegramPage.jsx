@@ -19,8 +19,12 @@ export default function TelegramPage() {
 
   const load = async () => {
     try {
-      setConnection(await getTelegramConnection())
-      setConfigured(await hasTelegramBotToken())
+      const [currentConnection, hasToken] = await Promise.all([getTelegramConnection(), hasTelegramBotToken()])
+      setConnection(currentConnection)
+      setConfigured(hasToken)
+      if (hasToken && !currentConnection) {
+        try { await checkBot() } catch (_) { /* manual check can retry below */ }
+      }
     } catch (e) { setError(e.message) }
   }
 
@@ -42,15 +46,26 @@ export default function TelegramPage() {
   async function checkBot() {
     setChecking(true); setError('')
     try {
-      const response = await fetch(webhookUrl, { method: 'GET' })
+      const response = await fetch(webhookUrl, { method: 'GET', cache: 'no-store' })
       const data = await response.json()
       if (!response.ok || !data.ok) throw new Error(data.message || data.error || 'Bot Telegram belum siap.')
       setBotInfo(data)
       setConfigured(true)
-    } catch (e) { setError(e.message) } finally { setChecking(false) }
+      return data
+    } catch (e) { setError(e.message); throw e } finally { setChecking(false) }
   }
 
-  async function generate() { setBusy(true); setError(''); try { setCode(await createTelegramLinkCode()) } catch (e) { setError(e.message) } finally { setBusy(false) } }
+  async function generate() {
+    setBusy(true); setError('')
+    try {
+      // Always repair/refresh the Telegram webhook before issuing a link code.
+      // This prevents a valid code from becoming unusable when Telegram's webhook
+      // was never configured or was changed after the bot token was saved.
+      await checkBot()
+      setCode(await createTelegramLinkCode())
+    } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+
   async function disconnect() { if (!window.confirm('Putuskan koneksi Telegram dari akun We MONEY?')) return; setBusy(true); setError(''); try { await unlinkTelegram(); setConnection(null); setCode(null) } catch (e) { setError(e.message) } finally { setBusy(false) } }
   async function copyCode() { if (!code?.code) return; await navigator.clipboard?.writeText(code.code) }
 
