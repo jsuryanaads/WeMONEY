@@ -1,6 +1,6 @@
 # We MONEY
 
-**Versi: V1.3.1**
+**Versi: V1.4.11**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
@@ -87,6 +87,6 @@ Migration berada di `supabase/migrations/`. Perubahan DDL harus diterapkan melal
 
 ## Status
 
-V1.3.1 — Smart Receipt/OCR browser aktif untuk JPG/PNG/WEBP dengan review sebelum penyimpanan. File receipt tidak disimpan di Storage dan tidak menggunakan localStorage.
+V1.4.11 — Build dan release terakhir berhasil. Smart Receipt/OCR browser aktif untuk JPG/PNG/WEBP dengan review sebelum penyimpanan. File receipt tidak disimpan di Storage dan tidak menggunakan localStorage. Validasi transaksi kini konsisten dengan aturan database bahwa dompet wajib dipilih.
 
 © 2026 Created Jsuryana
