@@ -1,39 +1,10 @@
+import { classifyTransaction } from './hybridAiService'
+
 export const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 
-const INCOME_RULES = [
-  ['Gaji', ['gaji', 'upah', 'salary']],
-  ['Bonus', ['bonus', 'thr', 'insentif']],
-  ['Penjualan', ['hasil jual', 'hasil penjualan', 'penjualan', 'jual']],
-  ['Usaha', ['usaha', 'omzet', 'pendapatan usaha']],
-  ['Fee', ['fee', 'honor', 'komisi']],
-  ['Cashback', ['cashback', 'cash back']],
-  ['Pemasukan', ['pemasukan', 'uang masuk', 'terima', 'menerima', 'diterima', 'dapat']]
-]
-
-const EXPENSE_RULES = [
-  ['Perawatan Kendaraan', ['servis motor', 'service motor', 'benerin motor', 'perbaiki motor', 'perbaikan motor', 'servis mobil', 'service mobil', 'bengkel', 'ganti oli']],
-  ['Suku Cadang', ['suku cadang', 'sparepart', 'spare part', 'ganti ban', 'ban motor', 'ban mobil']],
-  ['BBM', ['bensin', 'pertalite', 'pertamax', 'solar', 'bbm', 'isi bensin', 'isi bbm']],
-  ['Parkir', ['parkir', 'parkir motor', 'parkir mobil']],
-  ['Transportasi Online', ['ojek', 'gojek', 'grab', 'maxim', 'ojol']],
-  ['Kopi', ['kopi', 'ngopi', 'coffee']],
-  ['Makanan & Minuman', ['makan', 'kuliner', 'warung', 'resto', 'restoran', 'jajan', 'minum']],
-  ['Rokok', ['rokok', 'roko', 'sigaret']],
-  ['Belanja', ['belanja', 'beli', 'shopping']],
-  ['Listrik', ['listrik', 'token listrik', 'token']],
-  ['Internet', ['internet', 'wifi', 'wi-fi']],
-  ['Obat', ['obat', 'apotek', 'apotik']],
-]
-
-const normalizeText = value => String(value || '')
-  .toLowerCase()
-  .normalize('NFKC')
-  .replace(/\s+/g, ' ')
-  .trim()
-
 export function parseAmount(raw) {
-  const text = String(raw || '').toLowerCase().replace(/rp\.?/g, '').trim()
-  const match = text.match(/(\d+(?:[.,]\d+)?)\s*(juta|jt|ribu|rb|k)?/i)
+  const text = String(raw || '').toLowerCase().replace(/rp\.?/g, '').replace(/\s/g, '').trim()
+  const match = text.match(/^(\d+(?:[.,]\d+)?)(juta|jt|ribu|rb|k)?$/i)
   if (!match) return 0
   const value = Number(match[1].replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.'))
   if (!Number.isFinite(value)) return 0
@@ -58,35 +29,7 @@ export function splitQuickInput(value) {
 }
 
 export function inferType(description) {
-  const lower = normalizeText(description)
-  return INCOME_RULES.some(([, patterns]) => patterns.some(pattern => lower.includes(pattern))) ? 'income' : 'expense'
-}
-
-function findCategory(pool, categoryNames) {
-  return categoryNames
-    .map(name => pool.find(item => normalizeText(item.name) === normalizeText(name)))
-    .find(Boolean)
-}
-
-function classifyCategory(description, type, categories = []) {
-  const lower = normalizeText(description)
-  const pool = categories.filter(item => item.type === type && item.is_active !== false)
-  if (!pool.length) return { category: null, confidence: 0, source: 'none', explanation: 'Belum ada kategori aktif untuk jenis transaksi ini.' }
-
-  const exact = pool.find(item => {
-    const name = normalizeText(item.name)
-    return name && (lower === name || lower.includes(name))
-  })
-  if (exact) return { category: exact, confidence: 0.96, source: 'category-name', explanation: `Nama kategori “${exact.name}” cocok dengan input.` }
-
-  const rules = type === 'income' ? INCOME_RULES : EXPENSE_RULES
-  for (const [categoryName, patterns] of rules) {
-    if (!patterns.some(pattern => lower.includes(pattern))) continue
-    const category = findCategory(pool, [categoryName])
-    if (category) return { category, confidence: categoryName === 'Perawatan Kendaraan' ? 0.95 : 0.91, source: 'rule', explanation: `Terdeteksi pola “${categoryName}” dari konteks input.` }
-  }
-
-  return { category: null, confidence: 0.35, source: 'manual', explanation: 'Kategori belum cukup yakin. Pilih kategori secara manual pada tahap review.' }
+  return classifyTransaction({ text: description }).type
 }
 
 export function parseQuickItems(input, categories = [], wallets = []) {
@@ -95,22 +38,18 @@ export function parseQuickItems(input, categories = [], wallets = []) {
     const amount = amounts[amounts.length - 1] || 0
     const match = clause.match(/(?:rp\.?\s*)?\d+(?:[.,]\d+)?\s*(?:juta|jt|ribu|rb|k)?/i)
     const description = (match ? clause.slice(0, match.index) : clause).replace(/[,\-:]\s*$/, '').trim()
-    const type = inferType(description)
-    const classification = classifyCategory(description, type, categories)
-    const lower = normalizeText(description)
-    const wallet = wallets.find(item => item.name && lower.includes(normalizeText(item.name)))
-      || wallets.find(item => normalizeText(item.name) === 'kas utama')
-      || wallets[0]
+    const classification = classifyTransaction({ text: description, amount, categories, wallets })
     return {
       id: `${Date.now()}-${index}-${Math.random()}`,
-      description,
-      amount,
-      type,
-      categoryId: classification.category?.id || '',
-      walletId: wallet?.id || '',
-      classificationConfidence: classification.confidence,
-      classificationSource: classification.source,
-      classificationExplanation: classification.explanation,
+      description: classification.description || description,
+      amount: classification.amount,
+      type: classification.type,
+      categoryId: classification.categoryId || '',
+      walletId: classification.walletId || '',
+      transaction_date: classification.transaction_date,
+      classificationConfidence: classification.classificationConfidence,
+      classificationSource: classification.classificationSource,
+      classificationExplanation: classification.classificationExplanation,
     }
   })
 }
