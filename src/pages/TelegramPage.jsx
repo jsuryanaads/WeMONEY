@@ -22,7 +22,9 @@ export default function TelegramPage() {
       const [currentConnection, hasToken] = await Promise.all([getTelegramConnection(), hasTelegramBotToken()])
       setConnection(currentConnection)
       setConfigured(hasToken)
-      if (hasToken && !currentConnection) {
+      // Always verify and repair the webhook when the Telegram integration is opened.
+      // The backend performs an idempotent delete/set registration against Telegram.
+      if (hasToken) {
         try { await checkBot() } catch (_) { /* manual check can retry below */ }
       }
     } catch (e) { setError(e.message) }
@@ -58,9 +60,6 @@ export default function TelegramPage() {
   async function generate() {
     setBusy(true); setError('')
     try {
-      // Always repair/refresh the Telegram webhook before issuing a link code.
-      // This prevents a valid code from becoming unusable when Telegram's webhook
-      // was never configured or was changed after the bot token was saved.
       await checkBot()
       setCode(await createTelegramLinkCode())
     } catch (e) { setError(e.message) } finally { setBusy(false) }
@@ -85,7 +84,13 @@ export default function TelegramPage() {
           </div>
           <button disabled={busy || !token.trim()} onClick={saveToken} className={`${button} mt-3 w-full`}><KeyRound size={17} className="mr-1 inline"/>{busy ? 'Menyimpan...' : 'Simpan & Aktifkan Bot'}</button>
           <button disabled={checking || !configured} onClick={checkBot} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"><RefreshCw size={16} className={`mr-1 inline ${checking ? 'animate-spin' : ''}`}/>{checking ? 'Memeriksa...' : 'Periksa Bot & Webhook'}</button>
-          {botInfo && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"><b>Bot:</b> @{botInfo.bot || '-'}<br/><b>Webhook:</b> aktif</div>}
+          {botInfo && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <b>Bot:</b> @{botInfo.bot || '-'}<br/>
+            <b>Handler:</b> v{botInfo.handler_version || '-'}<br/>
+            <b>Webhook:</b> {botInfo.webhook_info?.url === webhookUrl ? 'aktif & sesuai' : 'perlu diperiksa'}<br/>
+            <b>Pending update:</b> {botInfo.webhook_info?.pending_update_count ?? '-'}
+            {botInfo.webhook_info?.last_error_message && <><br/><b>Telegram error terakhir:</b> {botInfo.webhook_info.last_error_message}</>}
+          </div>}
         </div>
       </div>
 
