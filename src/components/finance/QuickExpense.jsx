@@ -46,6 +46,15 @@ export default function QuickExpense({ open, onClose }) {
     setItems(parsedItems)
   }
 
+  function handleFormSubmit(event) {
+    if (!items.length) {
+      event.preventDefault()
+      analyze()
+      return
+    }
+    submit(event)
+  }
+
   function updateItem(id, field, value) {
     setItems(current => current.map(item => item.id === id ? { ...item, [field]: field === 'amount' ? Number(value) : value } : item))
   }
@@ -85,7 +94,7 @@ export default function QuickExpense({ open, onClose }) {
     <div className="wm-quick-card max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] p-5 shadow-2xl sm:rounded-[28px] sm:p-6">
       <div className="mb-5 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className="wm-feature-icon grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white"><Zap size={22} fill="currentColor" /></div><div><div className="mb-1 inline-flex rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider wm-feature-badge">Fitur Unggulan</div><h2 id="quick-expense-title" className="text-xl font-extrabold">Catat Cepat</h2><p className="mt-0.5 text-xs leading-5 opacity-65">Pemasukan, pengeluaran, atau beberapa transaksi sekaligus.</p></div></div><button type="button" onClick={onClose} className="rounded-xl p-2 opacity-55 hover:bg-black/5 dark:hover:bg-white/5" aria-label="Tutup Catat Cepat"><X size={19}/></button></div>
       {error && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">{error}</div>}
-      {saved ? <div className="grid place-items-center py-10 text-center"><div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"><Check size={28}/></div><p className="mt-4 font-extrabold">{items.length} transaksi tersimpan</p><p className="mt-1 text-sm opacity-60">Pemasukan {money(totalIncome)} · Pengeluaran {money(totalExpense)}</p></div> : <form onSubmit={submit} className="space-y-4">
+      {saved ? <div className="grid place-items-center py-10 text-center"><div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"><Check size={28}/></div><p className="mt-4 font-extrabold">{items.length} transaksi tersimpan</p><p className="mt-1 text-sm opacity-60">Pemasukan {money(totalIncome)} · Pengeluaran {money(totalExpense)}</p></div> : <form onSubmit={handleFormSubmit} className="space-y-4">
         {items.length === 0 ? <>
           <label className="block text-sm font-bold">Tulis transaksi seperti biasa<input autoFocus required className="wm-quick-input mt-2 w-full rounded-2xl px-4 py-4 text-base font-bold outline-none" placeholder="Beli rokok 27000, bayar parkir 2000" value={input} onChange={event => setInput(event.target.value)}/></label>
           <div className="wm-quick-preview rounded-2xl p-4 text-xs leading-5"><p className="font-extrabold">Cara penggunaan</p><p className="mt-2 opacity-70">• Satu transaksi: Beli makan 25000</p><p className="opacity-70">• Banyak transaksi: Beli rokok 27000, bayar parkir 2000</p><p className="opacity-70">• Pemasukan: Gaji 5 juta, bonus 500 ribu</p><p className="mt-2 opacity-55">Pisahkan transaksi dengan koma, baris baru, titik koma, atau “lalu/terus”. Gunakan “ribu/ rb”, “juta/jt”, atau angka biasa.</p></div>
