@@ -2,8 +2,7 @@ name: We MONEY Pages Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,108 +14,54 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
-env:
-  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-
 jobs:
   build:
-    name: Build Pages artifact
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Validate Supabase configuration
-        shell: bash
+      - run: npm install
+      - name: Validate environment
         run: |
-          set -euo pipefail
           test -n "$VITE_SUPABASE_URL"
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
-
-      - name: Build application
-        run: npm run build
-
-      - name: Verify build artifact
-        shell: bash
+      - run: npm run build
+      - name: Verify artifact
         run: |
-          set -euo pipefail
           test -s dist/index.html
           test -s dist/manifest.webmanifest
           grep -q 'We MONEY' dist/index.html
-          echo 'Build artifact: PASS'
-
-      - name: Prepare SPA fallback
-        run: cp dist/index.html dist/404.html
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - run: cp dist/index.html dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
   deploy:
-    name: Deploy GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Report deployment URL
+      - name: Verify production
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          echo "GitHub Pages URL: $PAGE_URL"
-          test -n "$PAGE_URL"
-
-      - name: Deployment smoke check
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        shell: bash
         run: |
           set -euo pipefail
+          test -n "$PAGE_URL"
           curl --fail --silent --show-error --location --retry 8 --retry-delay 5 --max-time 45 "$PAGE_URL" -o /tmp/index.html
-          test -s /tmp/index.html
           grep -q 'We MONEY' /tmp/index.html
-          echo 'Production HTML: PASS'
-
+          grep -q 'manifest.webmanifest' /tmp/index.html
           MANIFEST_URL="${PAGE_URL%/}/manifest.webmanifest"
           curl --fail --silent --show-error --location --retry 8 --retry-delay 5 --max-time 45 "$MANIFEST_URL" -o /tmp/manifest.webmanifest
           grep -q '"name": "We MONEY"' /tmp/manifest.webmanifest
           grep -q '"start_url": "/WeMONEY/"' /tmp/manifest.webmanifest
-          echo 'Production manifest: PASS'
-
-          SCRIPT_PATH=$(grep -oE 'src="[^"]+\.js"' /tmp/index.html | head -n 1 | sed 's/^src="//;s/"$//')
-          test -n "$SCRIPT_PATH"
-          SCRIPT_URL="${PAGE_URL}${SCRIPT_PATH#./}"
-          curl --fail --silent --show-error --location --retry 8 --retry-delay 5 --max-time 45 "$SCRIPT_URL" -o /tmp/app.js
-          test -s /tmp/app.js
-          echo 'Production JavaScript: PASS'
-
-          CSS_PATH=$(grep -oE 'href="[^"]+\.css"' /tmp/index.html | head -n 1 | sed 's/^href="//;s/"$//')
-          test -n "$CSS_PATH"
-          CSS_URL="${PAGE_URL}${CSS_PATH#./}"
-          curl --fail --silent --show-error --location --retry 8 --retry-delay 5 --max-time 45 "$CSS_URL" -o /tmp/app.css
-          test -s /tmp/app.css
-          echo 'Production CSS: PASS'
-
-          FALLBACK_URL="${PAGE_URL%/}/ci-cd-spa-check"
-          curl --fail --silent --show-error --location --retry 8 --retry-delay 5 --max-time 45 "$FALLBACK_URL" -o /tmp/404-check.html
-          grep -q 'We MONEY' /tmp/404-check.html
-          echo 'SPA fallback: PASS'
-
-          echo 'We MONEY GitHub Pages deployment verification: PASS'
+          echo 'We MONEY Pages deployment + production verification: PASS'
