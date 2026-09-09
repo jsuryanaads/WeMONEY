@@ -25,7 +25,9 @@ export const EXPENSE_RULES = [
 export const INCOME_SIGNALS = [
   ['pemasukan', 5], ['uang masuk', 6], ['uang diterima', 6], ['terima uang', 6],
   ['dapat uang', 5], ['diterima', 4], ['pendapatan', 5], ['hasil usaha', 6],
-  ['uang dari usaha', 6], ['income', 5], ['masuk', 3], ['gaji', 6], ['bonus', 5], ['cashback', 4]
+  ['uang dari usaha', 6], ['income', 5], ['masuk', 3], ['gaji', 6], ['bonus', 5],
+  ['cashback', 4], ['usaha', 2], ['bisnis', 2], ['membayar saya', 7], ['bayar saya', 7],
+  ['dibayar ke saya', 7], ['dibayar kepada saya', 7], ['transfer ke saya', 7]
 ]
 
 export const EXPENSE_SIGNALS = [
@@ -34,6 +36,18 @@ export const EXPENSE_SIGNALS = [
 ]
 
 export const normalize = value => String(value || '').toLowerCase().normalize('NFKC').replace(/\s+/g, ' ').trim()
+
+export function inferTransactionType(value) {
+  const text = normalize(value)
+  let incomeScore = 0
+  let expenseScore = 0
+  for (const [term, score] of INCOME_SIGNALS) if (text.includes(term)) incomeScore += score
+  for (const [term, score] of EXPENSE_SIGNALS) if (text.includes(term)) expenseScore += score
+  if (incomeScore === 0 && expenseScore === 0) return { type: 'expense', confidence: 0.3, incomeScore, expenseScore }
+  if (incomeScore > expenseScore) return { type: 'income', confidence: Math.min(0.98, 0.55 + (incomeScore - expenseScore) * 0.07), incomeScore, expenseScore }
+  if (expenseScore > incomeScore) return { type: 'expense', confidence: Math.min(0.98, 0.55 + (expenseScore - incomeScore) * 0.07), incomeScore, expenseScore }
+  return { type: 'expense', confidence: 0.5, incomeScore, expenseScore }
+}
 
 export const canonicalCategoryName = name => {
   const n = normalize(name)
