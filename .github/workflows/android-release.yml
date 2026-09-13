@@ -1,0 +1,82 @@
+name: WeMONEY Android Release Build
+
+on:
+  push:
+    branches: [android-capacitor]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+jobs:
+  release:
+    name: Build Android Release Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate Supabase environment
+        run: |
+          set -euo pipefail
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Build web application for Capacitor
+        run: CAPACITOR_BUILD=true npm run build
+
+      - name: Prepare WeMONEY Android icon source
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cp src/assets/branding/wemoney-app-icon.png assets/icon.png
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Generate Android icon from WeMONEY logo
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build unsigned release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build unsigned release AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeMONEY-Android-release-unsigned-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeMONEY-Android-release-unsigned-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
