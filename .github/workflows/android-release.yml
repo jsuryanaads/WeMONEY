@@ -167,12 +167,27 @@ jobs:
           git push origin ":refs/tags/$RELEASE_TAG" 2>/dev/null || true
           git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "WeMONEY Android v1.4.19"
           git push origin "$RELEASE_TAG"
+          cat > /tmp/wemoney-android-release-notes.md <<'EOF'
+          WeMONEY Android v1.4.19
+
+          - Public Android release
+          - Capacitor Android project persisted in the android-capacitor branch
+          - Native Camera/OCR integration
+          - Signed release APK
+          - Signed release AAB
+          - Validated on a real Android device
+
+          Web release v1.4.19 remains separate.
+          EOF
           gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "WeMONEY Android v1.4.19" \
+            --notes-file /tmp/wemoney-android-release-notes.md \
+            --latest=false
+          gh release upload "$RELEASE_TAG" \
             android/app/build/outputs/apk/release/app-release.apk \
             android/app/build/outputs/bundle/release/app-release.aab \
-            --title "WeMONEY Android v1.4.19" \
-            --notes "WeMONEY Android v1.4.19\n\n- Public Android release\n- Capacitor Android project persisted in the android-capacitor branch\n- Native Camera/OCR integration\n- Signed release APK\n- Signed release AAB\n- Validated on a real Android device\n\nWeb release v1.4.19 remains separate." \
-            --latest=false
+            --clobber
 
       - name: Remove temporary keystore
         if: always()
