@@ -33,9 +33,9 @@ jobs:
       - name: Verify downloaded assets
         run: |
           set -euo pipefail
-          find release-assets -type f -maxdepth 4 -print
-          test -f release-assets/apk/app-release.apk
-          test -f release-assets/aab/app-release.aab
+          find release-assets -type f -maxdepth 6 -print
+          test -f release-assets/apk/WeMONEY-Android-release-signed-apk/app-release.apk
+          test -f release-assets/aab/WeMONEY-Android-release-signed-aab/app-release.aab
 
       - name: Upload assets to public Android release
         env:
@@ -58,8 +58,8 @@ jobs:
             echo "Failed to upload $asset after 5 attempts" >&2
             return 1
           }
-          upload_asset release-assets/apk/app-release.apk
-          upload_asset release-assets/aab/app-release.aab
+          upload_asset release-assets/apk/WeMONEY-Android-release-signed-apk/app-release.apk
+          upload_asset release-assets/aab/WeMONEY-Android-release-signed-aab/app-release.aab
           assets_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
           echo "$assets_json"
           echo "$assets_json" | grep -Fx 'app-release.apk'
