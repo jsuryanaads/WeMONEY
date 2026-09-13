@@ -56,7 +56,13 @@ jobs:
           cp src/assets/branding/wemoney-app-icon.png assets/icon.png
 
       - name: Generate Android project
-        run: npx cap add android
+        run: |
+          set -euo pipefail
+          if [ -d android ]; then
+            echo "android/ already exists in repository; reusing persisted Android project"
+          else
+            npx cap add android
+          fi
 
       - name: Generate Android icon from WeMONEY logo
         run: npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
@@ -78,14 +84,16 @@ jobs:
           if marker not in text:
               raise SystemExit('Could not locate buildTypes in android/app/build.gradle')
           signing = '''    signingConfigs {\n        release {\n            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")\n            keyAlias System.getenv("ANDROID_KEY_ALIAS")\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD")\n        }\n    }\n\n'''
-          text = text.replace(marker, signing + marker, 1)
+          if 'signingConfigs {' not in text:
+              text = text.replace(marker, signing + marker, 1)
           release_marker = '        release {\n'
           pos = text.find(marker)
           release_pos = text.find(release_marker, pos)
           if release_pos < 0:
               raise SystemExit('Could not locate release buildType')
-          insert_at = release_pos + len(release_marker)
-          text = text[:insert_at] + '            signingConfig signingConfigs.release\n' + text[insert_at:]
+          if 'signingConfig signingConfigs.release' not in text[release_pos:release_pos + 300]:
+              insert_at = release_pos + len(release_marker)
+              text = text[:insert_at] + '            signingConfig signingConfigs.release\n' + text[insert_at:]
           p.write_text(text)
           PY
 
