@@ -1,6 +1,8 @@
 name: Persist WeMONEY Android Project
 
 on:
+  push:
+    branches: [android-capacitor]
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Validate Supabase environment
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+
       - name: Build web application
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -56,6 +67,13 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Verify Android project
+        run: |
+          set -euo pipefail
+          test -f android/settings.gradle
+          test -f android/gradlew
+          test -f android/app/build.gradle
 
       - name: Commit Android project
         run: |
