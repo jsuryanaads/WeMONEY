@@ -1,0 +1,66 @@
+name: WeMONEY Android Release Assets
+
+on:
+  push:
+    branches: [android-capacitor]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish-assets:
+    name: Attach signed Android assets to public release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 10315220716
+          github-token: ${{ github.token }}
+          run-id: 34748140574
+          path: release-assets/apk
+
+      - name: Download signed AAB artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 10315160865
+          github-token: ${{ github.token }}
+          run-id: 34748140574
+          path: release-assets/aab
+
+      - name: Verify downloaded assets
+        run: |
+          set -euo pipefail
+          find release-assets -type f -maxdepth 4 -print
+          test -f release-assets/apk/app-release.apk
+          test -f release-assets/aab/app-release.aab
+
+      - name: Upload assets to public Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: android-v1.4.19
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" >/dev/null
+          upload_asset() {
+            local asset="$1"
+            local attempt=1
+            while [ "$attempt" -le 5 ]; do
+              echo "Uploading $asset (attempt $attempt/5)"
+              if gh release upload "$RELEASE_TAG" "$asset" --clobber; then
+                return 0
+              fi
+              if [ "$attempt" -lt 5 ]; then sleep 10; fi
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to upload $asset after 5 attempts" >&2
+            return 1
+          }
+          upload_asset release-assets/apk/app-release.apk
+          upload_asset release-assets/aab/app-release.aab
+          assets_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          echo "$assets_json"
+          echo "$assets_json" | grep -Fx 'app-release.apk'
+          echo "$assets_json" | grep -Fx 'app-release.aab'
