@@ -31,7 +31,9 @@ jobs:
           java-version: 21
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install @vitejs/plugin-react@5.0.2 --no-save
 
       - name: Validate Supabase environment
         run: |
