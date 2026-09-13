@@ -163,11 +163,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch --tags origin
-          git tag -d "$RELEASE_TAG" 2>/dev/null || true
-          git push origin ":refs/tags/$RELEASE_TAG" 2>/dev/null || true
-          git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "WeMONEY Android v1.4.19"
-          git push origin "$RELEASE_TAG"
-          cat > /tmp/wemoney-android-release-notes.md <<'EOF'
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Public release already exists; keep its tag and upload missing assets."
+          else
+            git tag -d "$RELEASE_TAG" 2>/dev/null || true
+            git push origin ":refs/tags/$RELEASE_TAG" 2>/dev/null || true
+            git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "WeMONEY Android v1.4.19"
+            git push origin "$RELEASE_TAG"
+            cat > /tmp/wemoney-android-release-notes.md <<'EOF'
           WeMONEY Android v1.4.19
 
           - Public Android release
@@ -179,15 +183,35 @@ jobs:
 
           Web release v1.4.19 remains separate.
           EOF
-          gh release create "$RELEASE_TAG" \
-            --verify-tag \
-            --title "WeMONEY Android v1.4.19" \
-            --notes-file /tmp/wemoney-android-release-notes.md \
-            --latest=false
-          gh release upload "$RELEASE_TAG" \
-            android/app/build/outputs/apk/release/app-release.apk \
-            android/app/build/outputs/bundle/release/app-release.aab \
-            --clobber
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --title "WeMONEY Android v1.4.19" \
+              --notes-file /tmp/wemoney-android-release-notes.md \
+              --latest=false
+          fi
+
+          upload_asset() {
+            local asset="$1"
+            local attempt=1
+            while [ "$attempt" -le 5 ]; do
+              echo "Uploading $asset (attempt $attempt/5)"
+              if gh release upload "$RELEASE_TAG" "$asset" --clobber; then
+                return 0
+              fi
+              if [ "$attempt" -lt 5 ]; then sleep 10; fi
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to upload $asset after 5 attempts" >&2
+            return 1
+          }
+
+          upload_asset android/app/build/outputs/apk/release/app-release.apk
+          upload_asset android/app/build/outputs/bundle/release/app-release.aab
+
+          assets_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          echo "$assets_json"
+          echo "$assets_json" | grep -Fx 'app-release.apk'
+          echo "$assets_json" | grep -Fx 'app-release.aab'
 
       - name: Remove temporary keystore
         if: always()
