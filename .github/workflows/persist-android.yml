@@ -1,0 +1,71 @@
+name: Persist WeMONEY Android Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Android branch
+        uses: actions/checkout@v4
+        with:
+          ref: android-capacitor
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web application
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: CAPACITOR_BUILD=true npm run build
+
+      - name: Prepare Android icon source
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cp src/assets/branding/wemoney-app-icon.png assets/icon.png
+
+      - name: Generate Android project
+        run: |
+          set -euo pipefail
+          if [ ! -d android ]; then
+            npx cap add android
+          else
+            echo "android/ already exists; keeping the repository project."
+          fi
+
+      - name: Generate Android icon
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Commit Android project
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android
+          if git diff --cached --quiet; then
+            echo "No Android project changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(android): persist generated Capacitor project"
+          git push origin HEAD:android-capacitor
