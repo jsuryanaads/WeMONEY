@@ -12,6 +12,11 @@ permissions:
 env:
   VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
   VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  ANDROID_SIGNING_ENABLED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
 
 jobs:
   release:
@@ -59,24 +64,87 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Configure Android signing
+        if: env.ANDROID_SIGNING_ENABLED == 'true'
+        run: |
+          set -euo pipefail
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/wemoney-release.keystore
+          export ANDROID_KEYSTORE_PATH="$GITHUB_WORKSPACE/android/wemoney-release.keystore"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          text = p.read_text()
+          marker = '    buildTypes {\n'
+          if marker not in text:
+              raise SystemExit('Could not locate buildTypes in android/app/build.gradle')
+          signing = '''    signingConfigs {\n        release {\n            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")\n            keyAlias System.getenv("ANDROID_KEY_ALIAS")\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD")\n        }\n    }\n\n'''
+          text = text.replace(marker, signing + marker, 1)
+          release_marker = '        release {\n'
+          pos = text.find(marker)
+          release_pos = text.find(release_marker, pos)
+          if release_pos < 0:
+              raise SystemExit('Could not locate release buildType')
+          insert_at = release_pos + len(release_marker)
+          text = text[:insert_at] + '            signingConfig signingConfigs.release\n' + text[insert_at:]
+          p.write_text(text)
+          PY
+
+      - name: Build signed release APK
+        if: env.ANDROID_SIGNING_ENABLED == 'true'
+        working-directory: android
+        run: |
+          export ANDROID_KEYSTORE_PATH="$GITHUB_WORKSPACE/android/wemoney-release.keystore"
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Build signed release AAB
+        if: env.ANDROID_SIGNING_ENABLED == 'true'
+        working-directory: android
+        run: |
+          export ANDROID_KEYSTORE_PATH="$GITHUB_WORKSPACE/android/wemoney-release.keystore"
+          ./gradlew bundleRelease --no-daemon
+
       - name: Build unsigned release APK
+        if: env.ANDROID_SIGNING_ENABLED != 'true'
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Build unsigned release AAB
+        if: env.ANDROID_SIGNING_ENABLED != 'true'
         working-directory: android
         run: ./gradlew bundleRelease --no-daemon
 
-      - name: Upload release APK
+      - name: Upload signed release APK
+        if: env.ANDROID_SIGNING_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeMONEY-Android-release-signed-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload signed release AAB
+        if: env.ANDROID_SIGNING_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeMONEY-Android-release-signed-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload unsigned release APK
+        if: env.ANDROID_SIGNING_ENABLED != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: WeMONEY-Android-release-unsigned-apk
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
 
-      - name: Upload release AAB
+      - name: Upload unsigned release AAB
+        if: env.ANDROID_SIGNING_ENABLED != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: WeMONEY-Android-release-unsigned-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f android/wemoney-release.keystore
