@@ -42,8 +42,17 @@ jobs:
       - name: Build web application for Capacitor
         run: CAPACITOR_BUILD=true npm run build
 
+      - name: Prepare WeMONEY Android icon source
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          cp src/assets/branding/wemoney-app-icon.png assets/icon.png
+
       - name: Generate Android project
         run: npx cap add android
+
+      - name: Generate Android icon from WeMONEY logo
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
 
       - name: Sync Capacitor
         run: npx cap sync android
