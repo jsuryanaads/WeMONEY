@@ -33,34 +33,51 @@ jobs:
       - name: Verify downloaded assets
         run: |
           set -euo pipefail
-          find release-assets -type f -maxdepth 6 -print
           test -f release-assets/apk/WeMONEY-Android-release-signed-apk/app-release.apk
           test -f release-assets/aab/WeMONEY-Android-release-signed-aab/app-release.aab
 
-      - name: Upload assets to public Android release
+      - name: Upload release assets through GitHub upload API
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: android-v1.4.19
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh release view "$RELEASE_TAG" >/dev/null
+          release_json="$(gh api "repos/$REPOSITORY/releases/tags/$RELEASE_TAG")"
+          release_id="$(printf '%s' "$release_json" | jq -r '.id')"
+          upload_url="$(printf '%s' "$release_json" | jq -r '.upload_url' | sed 's/{?name,label}//')"
+          test -n "$release_id"
+          test -n "$upload_url"
+
           upload_asset() {
-            local asset="$1"
+            local file="$1"
+            local content_type="$2"
+            local name="$3"
             local attempt=1
             while [ "$attempt" -le 5 ]; do
-              echo "Uploading $asset (attempt $attempt/5)"
-              if gh release upload "$RELEASE_TAG" "$asset" --clobber; then
+              echo "Uploading $name via GitHub release asset API (attempt $attempt/5)"
+              if curl --fail-with-body --silent --show-error --location \
+                -X POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "X-GitHub-Api-Version: 2026-03-10" \
+                -H "Content-Type: $content_type" \
+                --data-binary "@$file" \
+                "$upload_url?name=$name"; then
+                echo "Uploaded $name"
                 return 0
               fi
               if [ "$attempt" -lt 5 ]; then sleep 10; fi
               attempt=$((attempt + 1))
             done
-            echo "Failed to upload $asset after 5 attempts" >&2
+            echo "Failed to upload $name after 5 attempts" >&2
             return 1
           }
-          upload_asset release-assets/apk/WeMONEY-Android-release-signed-apk/app-release.apk
-          upload_asset release-assets/aab/WeMONEY-Android-release-signed-aab/app-release.aab
-          assets_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+
+          upload_asset release-assets/apk/WeMONEY-Android-release-signed-apk/app-release.apk application/vnd.android.package-archive app-release.apk
+          upload_asset release-assets/aab/WeMONEY-Android-release-signed-aab/app-release.aab application/octet-stream app-release.aab
+
+          assets_json="$(gh api "repos/$REPOSITORY/releases/$release_id/assets" --jq '.[].name')"
           echo "$assets_json"
           echo "$assets_json" | grep -Fx 'app-release.apk'
           echo "$assets_json" | grep -Fx 'app-release.aab'
