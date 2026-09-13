@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 env:
@@ -144,6 +144,27 @@ jobs:
           name: WeMONEY-Android-release-unsigned-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+
+      - name: Publish public Android GitHub Release
+        if: env.ANDROID_SIGNING_ENABLED == 'true' && github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-android-release]')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: android-v1.4.19
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags origin
+          git tag -d "$RELEASE_TAG" 2>/dev/null || true
+          git push origin ":refs/tags/$RELEASE_TAG" 2>/dev/null || true
+          git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "WeMONEY Android v1.4.19"
+          git push origin "$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" \
+            android/app/build/outputs/apk/release/app-release.apk \
+            android/app/build/outputs/bundle/release/app-release.aab \
+            --title "WeMONEY Android v1.4.19" \
+            --notes "WeMONEY Android v1.4.19\n\n- Public Android release\n- Capacitor Android project persisted in the android-capacitor branch\n- Native Camera/OCR integration\n- Signed release APK\n- Signed release AAB\n- Validated on a real Android device\n\nWeb release v1.4.19 remains separate." \
+            --latest=false
 
       - name: Remove temporary keystore
         if: always()
