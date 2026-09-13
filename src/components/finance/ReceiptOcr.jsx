@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, CheckCircle2, FileScan, Loader2, RotateCcw, Upload, X } from 'lucide-react'
+import { Camera as NativeCamera } from '@capacitor/camera'
+import { Capacitor } from '@capacitor/core'
 import { validateReceiptFile } from '../../services/receiptService'
 import { recognizeReceipt } from '../../services/ocrService'
 
@@ -13,13 +15,47 @@ export default function ReceiptOcr({ disabled = false, onVerified, onCancel, aut
   const [error, setError] = useState('')
   const inputRef = useRef(null)
   const autoOpenedRef = useRef(false)
+  const nativeCamera = Capacitor.isNativePlatform()
 
   useEffect(() => {
     if (!autoOpen || disabled || autoOpenedRef.current || status !== 'idle') return
     autoOpenedRef.current = true
-    const timer = window.setTimeout(() => inputRef.current?.click(), 120)
+    const timer = window.setTimeout(() => {
+      if (nativeCamera) openNativeCamera()
+      else inputRef.current?.click()
+    }, 120)
     return () => window.clearTimeout(timer)
-  }, [autoOpen, disabled, status])
+  }, [autoOpen, disabled, status, nativeCamera])
+
+  async function openNativeCamera() {
+    if (disabled || status !== 'idle') return
+    setError('')
+    setResult(null)
+    setStatus('processing')
+    setProgress(0)
+    setFileName('Foto kamera')
+    try {
+      const photo = await NativeCamera.takePhoto({ quality: 90, includeMetadata: true })
+      const url = photo.webPath || photo.uri
+      if (!url) throw new Error('Foto kamera tidak dapat dibaca.')
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Gagal membaca hasil foto kamera.')
+      const blob = await response.blob()
+      const file = new File([blob], `wemoney-camera-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' })
+      await handleFile(file)
+    } catch (e) {
+      if (e?.message?.toLowerCase?.().includes('cancel')) {
+        setStatus('idle')
+        setFileName('')
+        autoOpenedRef.current = false
+        return
+      }
+      setStatus('idle')
+      setFileName('')
+      setError(e?.message || 'Kamera gagal dibuka atau foto gagal diproses.')
+      autoOpenedRef.current = false
+    }
+  }
 
   async function handleFile(file) {
     if (!file) return
@@ -37,6 +73,7 @@ export default function ReceiptOcr({ disabled = false, onVerified, onCancel, aut
       setStatus('idle')
       setFileName('')
       setError(e.message || 'OCR gagal memproses struk.')
+      autoOpenedRef.current = false
     }
   }
 
@@ -76,10 +113,12 @@ export default function ReceiptOcr({ disabled = false, onVerified, onCancel, aut
 
     {!embedded && <div className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-slate-400"><FileScan size={14} /> Smart Receipt / OCR · diproses sementara di browser</div>}
 
-    {status === 'idle' && <label className={`wm-photo-upload ${embedded ? 'mt-1' : 'mt-4'} flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm font-extrabold ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
+    {status === 'idle' && (nativeCamera ? <button type="button" disabled={disabled} onClick={openNativeCamera} className={`wm-photo-upload ${embedded ? 'mt-1' : 'mt-4'} flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm font-extrabold disabled:pointer-events-none disabled:opacity-50`}>
+      <Camera size={18} /> Buka Kamera
+    </button> : <label className={`wm-photo-upload ${embedded ? 'mt-1' : 'mt-4'} flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm font-extrabold ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
       <Upload size={18} /> Ambil / Pilih Foto Struk
       <input ref={inputRef} disabled={disabled} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" onChange={e => { handleFile(e.target.files?.[0] || null); e.target.value = '' }} />
-    </label>}
+    </label>)}
 
     {status === 'processing' && <div className="mt-4 rounded-2xl bg-white p-4 dark:bg-slate-950"><div className="flex items-center gap-3"><Loader2 className="animate-spin text-blue-600" size={19} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">Membaca {fileName}</p><p className="text-xs text-slate-400">OCR berjalan di browser — file tidak disimpan.</p></div><span className="text-sm font-extrabold text-blue-600">{Math.round(progress)}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"><div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} /></div></div>}
 
