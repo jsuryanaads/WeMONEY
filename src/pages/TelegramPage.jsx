@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react'
-import { Bot, CheckCircle2, Copy, Link2, Unlink, AlertTriangle, KeyRound, RefreshCw } from 'lucide-react'
+import { Bot, CheckCircle2, Copy, Link2, Unlink, AlertTriangle, KeyRound, RefreshCw, ShieldCheck, Sparkles, Radio, WalletCards, Activity, LockKeyhole } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { createTelegramLinkCode, getTelegramConnection, unlinkTelegram, hasTelegramBotToken, setTelegramBotToken } from '../services/telegramService'
 
-const button = 'rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
 const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`
+const AI_MODEL = 'openrouter/free'
+const AI_THRESHOLD = '70%'
+
+const card = 'rounded-2xl border border-[var(--wm-border)] bg-[var(--wm-surface)] shadow-lg shadow-black/5'
+const button = 'rounded-xl bg-[var(--wm-primary)] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
+const secondaryButton = 'rounded-xl border border-[var(--wm-border)] bg-[var(--wm-surface2)] px-4 py-3 text-sm font-bold text-[var(--wm-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
+
+function StatusPill({ ok, children }) {
+  return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+    <span className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-emerald-400' : 'bg-amber-400'}`} />{children}
+  </span>
+}
+
+function InfoRow({ label, value, ok }) {
+  return <div className="flex items-center justify-between gap-4 border-b border-[var(--wm-border)] py-3 last:border-b-0">
+    <span className="text-xs font-semibold text-[var(--wm-muted)]">{label}</span>
+    <span className="text-right text-xs font-extrabold text-[var(--wm-text)]">{ok === undefined ? value : <StatusPill ok={ok}>{value}</StatusPill>}</span>
+  </div>
+}
 
 export default function TelegramPage() {
   const [connection, setConnection] = useState(null)
@@ -22,11 +40,7 @@ export default function TelegramPage() {
       const [currentConnection, hasToken] = await Promise.all([getTelegramConnection(), hasTelegramBotToken()])
       setConnection(currentConnection)
       setConfigured(hasToken)
-      // Always verify and repair the webhook when the Telegram integration is opened.
-      // The backend performs an idempotent delete/set registration against Telegram.
-      if (hasToken) {
-        try { await checkBot() } catch (_) { /* manual check can retry below */ }
-      }
+      // Opening the page is read-only. Webhook registration is only changed by an explicit check/save action.
     } catch (e) { setError(e.message) }
   }
 
@@ -65,46 +79,70 @@ export default function TelegramPage() {
     } catch (e) { setError(e.message) } finally { setBusy(false) }
   }
 
-  async function disconnect() { if (!window.confirm('Putuskan koneksi Telegram dari akun We MONEY?')) return; setBusy(true); setError(''); try { await unlinkTelegram(); setConnection(null); setCode(null) } catch (e) { setError(e.message) } finally { setBusy(false) } }
+  async function disconnect() {
+    if (!window.confirm('Putuskan koneksi Telegram dari akun We MONEY?')) return
+    setBusy(true); setError('')
+    try { await unlinkTelegram(); setConnection(null); setCode(null) } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
+
   async function copyCode() { if (!code?.code) return; await navigator.clipboard?.writeText(code.code) }
 
-  return <AppShell title="Telegram">
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Bot Telegram</h2><p className="mt-1 text-sm text-slate-500">Kelola Bot Telegram dan catat transaksi tanpa membuka We MONEY.</p></div>
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</div>}
+  const botReady = Boolean(botInfo?.bot && botInfo?.webhook_info?.url === webhookUrl)
+  const telegramConnected = Boolean(connection)
 
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-600"><Bot size={24}/></div><div className="min-w-0 flex-1"><h3 className="font-extrabold text-slate-900">Konfigurasi Bot</h3><p className={`mt-1 text-sm font-semibold ${configured ? 'text-emerald-700' : 'text-amber-700'}`}>{configured ? <><CheckCircle2 size={15} className="mr-1 inline"/>Bot Token sudah tersimpan aman</> : 'Bot Token belum dikonfigurasi'}</p></div></div>
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <label className="text-sm font-bold text-slate-800">Bot Token Telegram</label>
-          <p className="mt-1 text-xs leading-5 text-slate-500">Token disimpan terenkripsi di Supabase Vault dan tidak disimpan di browser/database transaksi.</p>
-          <div className="mt-3 flex gap-2">
-            <input value={token} onChange={e => setToken(e.target.value)} type={showToken ? 'text' : 'password'} autoComplete="new-password" placeholder="123456789:AA..." className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-            <button type="button" onClick={() => setShowToken(v => !v)} className="rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700">{showToken ? 'Sembunyikan' : 'Tampilkan'}</button>
+  return <AppShell title="Telegram">
+    <div className="mx-auto max-w-5xl space-y-5">
+      <div className="relative overflow-hidden rounded-3xl border border-[var(--wm-border)] bg-[var(--wm-surface)] p-5 shadow-xl sm:p-6">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[var(--wm-primary)]/10 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[var(--wm-primary)]/10 text-[var(--wm-accent)] ring-1 ring-[var(--wm-primary)]/20"><Bot size={28}/></div>
+            <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black tracking-tight text-[var(--wm-text)]">Telegram Control Center</h2><StatusPill ok={botReady}>{botReady ? 'ONLINE' : configured ? 'READY' : 'SETUP'}</StatusPill></div><p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--wm-muted)]">Kelola koneksi Bot Telegram, status AI Assistant, dan keamanan integrasi We MONEY dari satu tempat.</p></div>
           </div>
-          <button disabled={busy || !token.trim()} onClick={saveToken} className={`${button} mt-3 w-full`}><KeyRound size={17} className="mr-1 inline"/>{busy ? 'Menyimpan...' : 'Simpan & Aktifkan Bot'}</button>
-          <button disabled={checking || !configured} onClick={checkBot} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"><RefreshCw size={16} className={`mr-1 inline ${checking ? 'animate-spin' : ''}`}/>{checking ? 'Memeriksa...' : 'Periksa Bot & Webhook'}</button>
-          {botInfo && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            <b>Bot:</b> @{botInfo.bot || '-'}<br/>
-            <b>Handler:</b> v{botInfo.handler_version || '-'}<br/>
-            <b>Webhook:</b> {botInfo.webhook_info?.url === webhookUrl ? 'aktif & sesuai' : 'perlu diperiksa'}<br/>
-            <b>Pending update:</b> {botInfo.webhook_info?.pending_update_count ?? '-'}
-            {botInfo.webhook_info?.last_error_message && <><br/><b>Telegram error terakhir:</b> {botInfo.webhook_info.last_error_message}</>}
-          </div>}
+          <button disabled={checking || !configured} onClick={checkBot} className={secondaryButton}><RefreshCw size={16} className={`mr-1 inline ${checking ? 'animate-spin' : ''}`}/>{checking ? 'Memeriksa...' : 'Periksa Status'}</button>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"><Link2 size={22}/></div><div className="min-w-0 flex-1"><h3 className="font-extrabold text-slate-900">Status akun We MONEY</h3>{connection ? <p className="mt-1 text-sm text-emerald-700"><CheckCircle2 size={15} className="mr-1 inline"/>Terhubung{connection.telegram_username ? ` sebagai @${connection.telegram_username}` : ''}</p> : <p className="mt-1 text-sm text-slate-500">Belum terhubung ke Telegram</p>}</div>{connection && <button disabled={busy} onClick={disconnect} className="rounded-xl px-3 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50"><Unlink size={17} className="mr-1 inline"/>Putuskan</button>}</div>
+      {error && <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-semibold text-rose-300"><AlertTriangle size={17} className="mr-1 inline"/>{error}</div>}
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <section className={`${card} p-5`}>
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/10 text-sky-400"><Radio size={20}/></div><div><h3 className="font-extrabold text-[var(--wm-text)]">Bot Status</h3><p className="text-xs text-[var(--wm-muted)]">Koneksi Telegram</p></div></div>
+          <div className="mt-4"><InfoRow label="Bot Token" value={configured ? 'Tersimpan aman' : 'Belum dikonfigurasi'} ok={configured}/><InfoRow label="Bot" value={botInfo?.bot ? `@${botInfo.bot}` : 'Belum diperiksa'}/><InfoRow label="Webhook" value={botReady ? 'Aktif & sesuai' : configured ? 'Belum diverifikasi' : '—'} ok={botReady}/><InfoRow label="Handler" value={botInfo?.handler_version ? `v${botInfo.handler_version}` : '—'}/></div>
+        </section>
+
+        <section className={`${card} p-5`}>
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/10 text-violet-400"><Sparkles size={20}/></div><div><h3 className="font-extrabold text-[var(--wm-text)]">AI Assistant</h3><p className="text-xs text-[var(--wm-muted)]">Klasifikasi transaksi</p></div></div>
+          <div className="mt-4"><InfoRow label="Engine" value="Hybrid AI"/><InfoRow label="Local AI" value="Prioritas" ok={true}/><InfoRow label="OpenRouter" value="Server-side fallback" ok={true}/><InfoRow label="Model" value={AI_MODEL}/><InfoRow label="Fallback threshold" value={AI_THRESHOLD}/></div>
+          <div className="mt-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 text-xs leading-5 text-[var(--wm-muted)]"><ShieldCheck size={15} className="mr-1 inline text-violet-400"/>API key AI tidak ditampilkan atau dikirim dari browser.</div>
+        </section>
+
+        <section className={`${card} p-5`}>
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/10 text-emerald-400"><WalletCards size={20}/></div><div><h3 className="font-extrabold text-[var(--wm-text)]">Akun We MONEY</h3><p className="text-xs text-[var(--wm-muted)]">Status koneksi akun</p></div></div>
+          <div className="mt-4"><InfoRow label="Status" value={telegramConnected ? 'Terhubung' : 'Belum terhubung'} ok={telegramConnected}/><InfoRow label="Telegram" value={connection?.telegram_username ? `@${connection.telegram_username}` : '—'}/><InfoRow label="Terhubung sejak" value={connection?.linked_at ? new Date(connection.linked_at).toLocaleDateString('id-ID') : '—'}/><InfoRow label="Aktivitas terakhir" value={connection?.last_seen_at ? new Date(connection.last_seen_at).toLocaleString('id-ID') : '—'}/></div>
+          {connection && <button disabled={busy} onClick={disconnect} className="mt-4 w-full rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm font-bold text-rose-300 hover:bg-rose-500/10"><Unlink size={16} className="mr-1 inline"/>Putuskan Telegram</button>}
+        </section>
       </div>
 
-      {!connection && <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <h3 className="font-extrabold text-slate-900">Hubungkan akun</h3><p className="mt-2 text-sm leading-6 text-slate-600">Buat kode satu kali. Kirim kode tersebut ke Bot Telegram dengan format <code className="rounded bg-slate-100 px-1.5 py-0.5">/hubungkan KODE</code>. Kode berlaku 15 menit.</p>
-        <button disabled={busy || !configured} onClick={generate} className={`${button} mt-4 w-full`}><Link2 size={17} className="mr-1 inline"/>{busy ? 'Membuat kode...' : configured ? 'Buat Kode Koneksi' : 'Konfigurasi Bot Terlebih Dahulu'}</button>
-        {code?.code && <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-bold uppercase tracking-wider text-blue-700">Kode koneksi</p><div className="mt-2 flex items-center gap-2"><code className="min-w-0 flex-1 break-all text-2xl font-black tracking-[0.18em] text-slate-900">{code.code}</code><button onClick={copyCode} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm" aria-label="Salin kode"><Copy size={18}/></button></div><p className="mt-2 text-xs text-blue-700">Setelah berhasil, kode otomatis tidak dapat digunakan lagi.</p></div>}
-      </div>}
+      <section className={`${card} p-5 sm:p-6`}>
+        <div className="flex items-start gap-3"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--wm-primary)]/10 text-[var(--wm-accent)]"><KeyRound size={21}/></div><div><h3 className="font-extrabold text-[var(--wm-text)]">Konfigurasi Bot</h3><p className="mt-1 text-sm text-[var(--wm-muted)]">Token Bot disimpan melalui backend. Tidak pernah dimasukkan ke database transaksi atau dikirim sebagai data UI.</p></div></div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div><label className="text-sm font-bold text-[var(--wm-text)]">Bot Token Telegram</label><div className="mt-2 flex gap-2"><input value={token} onChange={e => setToken(e.target.value)} type={showToken ? 'text' : 'password'} autoComplete="new-password" placeholder="123456789:AA..." className="min-w-0 flex-1 rounded-xl border border-[var(--wm-border)] bg-[var(--wm-surface2)] px-3 py-3 text-sm text-[var(--wm-text)] outline-none placeholder:text-[var(--wm-muted)] focus:border-[var(--wm-primary)]"/><button type="button" onClick={() => setShowToken(v => !v)} className={secondaryButton}>{showToken ? 'Sembunyikan' : 'Tampilkan'}</button></div></div>
+          <button disabled={busy || !token.trim()} onClick={saveToken} className={button}><KeyRound size={16} className="mr-1 inline"/>{busy ? 'Menyimpan...' : 'Simpan & Aktifkan'}</button>
+        </div>
+      </section>
 
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="font-extrabold text-amber-900"><AlertTriangle size={17} className="mr-1 inline"/>Contoh penggunaan</p><p className="mt-2 text-sm leading-6 text-amber-800"><code>beli makan 25rb</code> · <code>pengeluaran bensin 50000</code> · <code>pemasukan gaji 5jt</code>. Bot akan meminta konfirmasi sebelum transaksi disimpan.</p></div>
+      {!connection && <section className={`${card} p-5 sm:p-6`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><Activity size={18} className="text-[var(--wm-accent)]"/><h3 className="font-extrabold text-[var(--wm-text)]">Hubungkan akun Telegram</h3></div><p className="mt-2 text-sm leading-6 text-[var(--wm-muted)]">Buat kode satu kali, lalu kirim ke Bot dengan format <code className="rounded bg-[var(--wm-surface2)] px-1.5 py-0.5 font-bold text-[var(--wm-text)]">/hubungkan KODE</code>. Kode berlaku 15 menit.</p></div><button disabled={busy || !configured} onClick={generate} className={`${button} shrink-0`}><Link2 size={17} className="mr-1 inline"/>{busy ? 'Membuat...' : configured ? 'Buat Kode Koneksi' : 'Konfigurasi Bot Dulu'}</button></div>
+        {code?.code && <div className="mt-4 rounded-2xl border border-[var(--wm-primary)]/30 bg-[var(--wm-primary)]/5 p-4"><p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--wm-accent)]">Kode koneksi</p><div className="mt-2 flex items-center gap-2"><code className="min-w-0 flex-1 break-all text-2xl font-black tracking-[0.18em] text-[var(--wm-text)]">{code.code}</code><button onClick={copyCode} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--wm-surface)] text-[var(--wm-accent)] shadow-sm" aria-label="Salin kode"><Copy size={18}/></button></div><p className="mt-2 text-xs text-[var(--wm-muted)]">Kode hanya dapat digunakan sekali dan kedaluwarsa setelah 15 menit.</p></div>}
+      </section>}
+
+      <section className="grid gap-5 md:grid-cols-2">
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-3"><ShieldCheck size={20} className="text-emerald-400"/><h3 className="font-extrabold text-[var(--wm-text)]">Alur Aman</h3></div><p className="mt-2 text-sm leading-6 text-[var(--wm-muted)]">Pesan diproses oleh klasifikasi lokal terlebih dahulu. OpenRouter hanya menjadi fallback saat confidence rendah. Transaksi tetap membutuhkan konfirmasi sebelum disimpan.</p></div>
+        <div className="rounded-2xl border border-[var(--wm-border)] bg-[var(--wm-surface)] p-5"><div className="flex items-center gap-3"><LockKeyhole size={20} className="text-[var(--wm-accent)]"/><h3 className="font-extrabold text-[var(--wm-text)]">Contoh Perintah</h3></div><p className="mt-2 text-sm leading-6 text-[var(--wm-muted)]"><code>beli makan 25rb</code> · <code>pengeluaran bensin 50000</code> · <code>pemasukan gaji 5jt</code></p></div>
+      </section>
+
+      {botInfo?.webhook_info?.last_error_message && <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-300"><AlertTriangle size={17} className="mr-1 inline"/><b>Telegram error terakhir:</b> {botInfo.webhook_info.last_error_message}</div>}
     </div>
   </AppShell>
 }
