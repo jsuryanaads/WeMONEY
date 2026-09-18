@@ -8,7 +8,8 @@ export const INCOME_RULES = [
 ]
 
 export const EXPENSE_RULES = [
-  ['Rokok', ['rokok', 'roko', 'sigaret', 'cigarette']],
+  ['Rokok', ['rokok', 'roko', 'rokok2', 'sigaret', 'cigarette', 'ngerokok', 'merokok', 'asap rokok']],
+
   ['Makanan & Minuman', ['makan', 'makanan', 'kuliner', 'warung', 'resto', 'restoran', 'jajan', 'minum', 'minuman']],
   ['Kopi', ['kopi', 'ngopi', 'coffee']],
   ['BBM', ['bensin', 'pertalite', 'pertamax', 'solar', 'bbm', 'isi bensin']],
@@ -33,7 +34,8 @@ export const INCOME_SIGNALS = [
 
 export const EXPENSE_SIGNALS = [
   ['pengeluaran', 5], ['uang keluar', 6], ['uang dibayar', 6], ['bayar', 5],
-  ['membayar', 5], ['belanja', 4], ['beli', 4], ['expense', 5], ['keluar', 3]
+  ['membayar', 5], ['belanja', 4], ['beli', 4], ['expense', 5], ['keluar', 3],
+  ['lupa memasukan transaksi', 2], ['lupa mencatat transaksi', 2]
 ]
 
 export const normalize = value => String(value || '').toLowerCase().normalize('NFKC').replace(/\s+/g, ' ').trim()
@@ -44,6 +46,21 @@ export function inferTransactionType(value) {
   let expenseScore = 0
   for (const [term, score] of INCOME_SIGNALS) if (text.includes(term)) incomeScore += score
   for (const [term, score] of EXPENSE_SIGNALS) if (text.includes(term)) expenseScore += score
+
+  // Semantic category keywords are strong evidence of an expense.
+  for (const [, patterns] of EXPENSE_RULES) {
+    for (const pattern of patterns) {
+      if (text.includes(normalize(pattern))) expenseScore += 5
+    }
+  }
+
+  // Explicit income keywords should win when the user clearly says money came in.
+  for (const [, patterns] of INCOME_RULES) {
+    for (const pattern of patterns) {
+      if (text.includes(normalize(pattern))) incomeScore += 5
+    }
+  }
+
   if (incomeScore === 0 && expenseScore === 0) return { type: 'expense', confidence: 0.3, incomeScore, expenseScore }
   if (incomeScore > expenseScore) return { type: 'income', confidence: Math.min(0.98, 0.55 + (incomeScore - expenseScore) * 0.07), incomeScore, expenseScore }
   if (expenseScore > incomeScore) return { type: 'expense', confidence: Math.min(0.98, 0.55 + (expenseScore - incomeScore) * 0.07), incomeScore, expenseScore }
