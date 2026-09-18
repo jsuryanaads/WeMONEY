@@ -52,6 +52,22 @@ export async function updateObligation(id, userId, payload) {
   return data
 }
 
+export async function payObligation(userId, obligationId, payload) {
+  const amount = Number(payload.amount)
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Nominal pembayaran harus lebih besar dari 0.')
+  if (!payload.wallet_id) throw new Error('Dompet pembayaran wajib dipilih.')
+  const { data, error } = await supabase.rpc('pay_obligation', {
+    p_obligation_id: obligationId,
+    p_wallet_id: payload.wallet_id,
+    p_amount: amount,
+    p_payment_date: payload.payment_date,
+    p_category_id: payload.category_id || null,
+    p_notes: payload.notes?.trim() || null,
+  })
+  if (error) throw error
+  return data
+}
+
 export async function deleteObligation(id, userId) {
   const { error } = await supabase.from('obligations').delete().eq('id', id).eq('user_id', userId)
   if (error) throw error
