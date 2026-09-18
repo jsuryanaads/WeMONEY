@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { getCategories } from '../services/categoryService'
-import { getTransactions } from '../services/transactionService'
+import { getTransactionsForPeriod } from '../services/transactionService'
 import { DEFAULT_ALLOCATION, calculateGroupUsage, getBudgetPlan, saveBudgetPlan } from '../services/budgetPlanningService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -33,7 +33,9 @@ export default function BudgetsPage() {
     if (!user?.id) return
     setError('')
     try {
-      const [plan, c, t] = await Promise.all([getBudgetPlan(user.id, monthStart()), getCategories(user.id, 'expense'), getTransactions(user.id, 1000)])
+      const start = monthStart()
+      const end = monthEnd()
+      const [plan, c, t] = await Promise.all([getBudgetPlan(user.id, start), getCategories(user.id, 'expense'), getTransactionsForPeriod(user.id, start, end)])
       if (plan) { setIncome(String(plan.income_amount)); setObligation(String(plan.obligation_amount)); setAllocations(plan.allocations?.length ? plan.allocations : defaults()) }
       else { setIncome(''); setObligation(''); setAllocations(defaults()) }
       setCategories(c); setTransactions(t)
