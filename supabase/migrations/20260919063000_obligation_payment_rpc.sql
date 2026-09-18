@@ -18,9 +18,7 @@ create index if not exists obligation_payments_obligation_idx on public.obligati
 
 alter table public.obligation_payments enable row level security;
 create policy obligation_payments_select_own on public.obligation_payments for select to authenticated using ((select auth.uid()) = user_id);
-create policy obligation_payments_insert_own on public.obligation_payments for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy obligation_payments_delete_own on public.obligation_payments for delete to authenticated using ((select auth.uid()) = user_id);
-grant select, insert, delete on public.obligation_payments to authenticated;
+grant select on public.obligation_payments to authenticated;
 
 create or replace function public.pay_obligation(
   p_obligation_id uuid,
@@ -60,6 +58,12 @@ begin
 
   if ob.kind = 'receivable' then tx_type := 'income'; else tx_type := 'expense'; end if;
 
+  if p_category_id is not null and not exists (
+    select 1 from public.categories where id = p_category_id and user_id = uid
+  ) then
+    raise exception 'Kategori tidak valid.';
+  end if;
+
   if not exists (
     select 1 from public.wallets
      where id = p_wallet_id and user_id = uid and is_active = true
@@ -69,12 +73,14 @@ begin
 
   insert into public.transactions (
     user_id, wallet_id, category_id, type, amount, transaction_date,
-    description, notes, source
+    description, notes, source, device_id, device_name
   ) values (
     uid, p_wallet_id, p_category_id, tx_type, p_amount, p_payment_date,
     case when ob.kind = 'receivable' then 'Penerimaan: ' else 'Pembayaran: ' end || ob.title,
     coalesce(p_notes, ob.notes),
-    'obligation'
+    'obligation',
+    null,
+    null
   )
   returning * into tx;
 
