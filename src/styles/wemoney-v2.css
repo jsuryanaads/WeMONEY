@@ -38,3 +38,97 @@
 .wm-recent-list>div{transition:background .15s ease,transform .15s ease;border-radius:14px;padding:.72rem .5rem}.wm-recent-list>div:hover{background:color-mix(in srgb,var(--wm-primary) 5%,var(--wm-surface));transform:translateX(1px)}
 .wm-fab{width:58px;height:58px}
 @media(max-width:639px){.wm-shell{background:var(--wm-background)}.wm-header{top:.5rem;border-radius:18px;min-height:58px;padding-left:.45rem;padding-right:.45rem}.wm-header-brand img{width:32px;height:32px}.wm-header-brand-name{font-size:.98rem}.wm-header-brand-tagline{display:none}.wm-header>div:first-child{gap:.15rem}.wm-header>div:first-child>button{padding:.55rem}.wm-header .wm-header-brand{gap:.35rem}.wm-shell main{padding-left:.8rem;padding-right:.8rem}.wm-dashboard-head{margin-bottom:.8rem}.wm-balance-grid{gap:.65rem}.wm-metric{padding:.85rem;border-radius:18px}.wm-metric-icon{width:38px;height:38px;border-radius:12px}.wm-panel{border-radius:18px}}
+
+
+/* Premium dashboard polish 2.0 — visual-only, compact mobile hierarchy. */
+@media(max-width:639px){
+  .wm-shell main{
+    padding-top:.7rem;
+    padding-bottom:calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  .wm-dashboard-head{
+    margin-bottom:.65rem;
+  }
+  .wm-dashboard-head h2{
+    font-size:1.18rem;
+    line-height:1.25;
+  }
+  .wm-period-bar{
+    gap:.5rem;
+    margin-bottom:.7rem;
+  }
+  .wm-period-bar label{
+    min-width:0;
+    flex:1 1 0;
+  }
+  .wm-period-bar label>span{
+    font-size:.6rem;
+  }
+  .wm-period-bar select{
+    width:100%;
+    min-width:0;
+    min-height:42px;
+    padding:.55rem .72rem;
+    border-radius:12px;
+    font-size:.78rem;
+  }
+  .wm-balance-grid{
+    gap:.55rem;
+  }
+  .wm-metric{
+    padding:.78rem;
+    border-radius:17px;
+    min-height:0;
+    box-shadow:0 8px 22px rgb(2 6 23/.08);
+  }
+  .wm-balance-grid .wm-metric:first-child{
+    min-height:92px;
+  }
+  .wm-metric-icon{
+    width:36px;
+    height:36px;
+    border-radius:11px;
+  }
+  .wm-metric strong{
+    font-size:1.08rem;
+    margin-top:.12rem;
+  }
+  .wm-metric small{
+    font-size:.62rem;
+  }
+  .wm-panel{
+    padding:.82rem;
+    border-radius:17px;
+    box-shadow:0 9px 24px rgb(2 6 23/.07);
+  }
+  .wm-panel-head h3{
+    font-size:.92rem;
+  }
+  .wm-panel-head p{
+    font-size:.67rem;
+  }
+  .wm-flow-grid{
+    gap:.5rem;
+    margin-top:.7rem;
+  }
+  .wm-flow-grid>div{
+    padding:.68rem;
+    border-radius:12px;
+  }
+  .wm-recent-list>div{
+    padding:.62rem .35rem;
+  }
+  .wm-fab{
+    width:56px;
+    height:56px;
+    border-width:3px;
+    box-shadow:0 10px 24px color-mix(in srgb,var(--wm-primary) 32%,transparent);
+  }
+  .wm-mobile-nav{
+    height:calc(3.75rem + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 28px rgb(2 6 23/.18);
+  }
+  .wm-mobile-nav button{
+    min-height:3.75rem;
+  }
+}
