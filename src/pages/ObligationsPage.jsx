@@ -7,7 +7,7 @@ import { getWallets } from '../services/walletService'
 import { classifyFinanceIntentWithAi } from '../services/financeIntentService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const blank = () => ({ kind: 'debt', title: '', counterparty: '', amount_total: '', amount_paid: '0', due_date: today(), status: 'open', is_recurring: false, recurrence: 'monthly', notes: '' })
 const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700'
 const input = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
