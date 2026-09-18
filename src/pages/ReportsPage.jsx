@@ -4,6 +4,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { getTransactions } from '../services/transactionService'
 import { calculateBudgetUsage, getBudgets } from '../services/budgetService'
+import { getObligations } from '../services/obligationService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
@@ -11,8 +12,8 @@ const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${St
 
 export default function ReportsPage() {
   const { user } = useAuth()
-  const [rows, setRows] = useState([]); const [budgets, setBudgets] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
-  const load = async () => { if (!user?.id) return; setLoading(true); setError(''); try { const [tx, bs] = await Promise.all([getTransactions(user.id, 1000), getBudgets(user.id, { activeOnly: true })]); setRows(tx); setBudgets(bs) } catch (e) { setError(e.message || 'Gagal memuat laporan.') } finally { setLoading(false) } }
+  const [rows, setRows] = useState([]); const [budgets, setBudgets] = useState([]); const [obligations, setObligations] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
+  const load = async () => { if (!user?.id) return; setLoading(true); setError(''); try { const [tx, bs, obs] = await Promise.all([getTransactions(user.id, 1000), getBudgets(user.id, { activeOnly: true }), getObligations(user.id)]); setRows(tx); setBudgets(bs); setObligations(obs) } catch (e) { setError(e.message || 'Gagal memuat laporan.') } finally { setLoading(false) } }
   useEffect(() => { load(); const refresh = () => load(); window.addEventListener('wemoney:data-changed', refresh); return () => window.removeEventListener('wemoney:data-changed', refresh) }, [user?.id])
 
   const months = useMemo(() => { const now = new Date(); const map = {}; for (let i=11;i>=0;i--) { const d=new Date(now.getFullYear(),now.getMonth()-i,1); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; map[key]={key,label:`${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`,income:0,expense:0} } rows.forEach(tx=>{const key=String(tx.transaction_date||'').slice(0,7);if(map[key]&&(tx.type==='income'||tx.type==='expense'))map[key][tx.type]+=Number(tx.amount||0)});return Object.values(map) },[rows])
@@ -21,6 +22,7 @@ export default function ReportsPage() {
   const activeBudgetCards = useMemo(()=>budgets.filter(b=>b.is_active).map(b=>({budget:b,usage:calculateBudgetUsage(b,rows)})),[budgets,rows])
   const max=Math.max(1,...months.flatMap(item=>[item.income,item.expense])); const insight=expenseChange===null?'Tambahkan transaksi agar perbandingan bulan mulai terbentuk.':expenseChange>0?`Pengeluaran bulan ini naik ${expenseChange}% dibanding bulan sebelumnya.`:expenseChange<0?`Pengeluaran bulan ini turun ${Math.abs(expenseChange)}% dibanding bulan sebelumnya.`:'Pengeluaran bulan ini sama dengan bulan sebelumnya.'
   const today=localToday()
+  const obligationSummary = useMemo(() => obligations.reduce((a, row) => { const remaining = Math.max(0, Number(row.amount_total || 0) - Number(row.amount_paid || 0)); if (row.status === 'open') { if (row.kind === 'debt') a.debt += remaining; else if (row.kind === 'bill') a.bill += remaining; else if (row.kind === 'receivable') a.receivable += remaining } return a }, { debt: 0, bill: 0, receivable: 0 }), [obligations])
 
   return <AppShell title="Laporan">
     <div className="mb-5"><h2 className="text-2xl font-extrabold tracking-tight">Laporan & Insight</h2><p className="mt-1 text-sm text-slate-500">Pahami arus uang, pola pengeluaran, dan posisi terhadap anggaran.</p></div>
@@ -28,6 +30,8 @@ export default function ReportsPage() {
     <section className="grid gap-3 sm:grid-cols-3"><Stat title="Pemasukan bulan ini" value={current.income} tone="green" icon={TrendingUp} loading={loading}/><Stat title="Pengeluaran bulan ini" value={current.expense} tone="rose" icon={TrendingDown} loading={loading}/><Stat title="Sisa bulan ini" value={net} tone={net>=0?'blue':'rose'} icon={BarChart3} loading={loading}/></section>
 
     {activeBudgetCards.length>0&&<section className="wm-panel mt-4"><div className="wm-panel-head"><div><h3 className="flex items-center gap-2"><Target size={18}/> Budget Awareness</h3><p>Realisasi pengeluaran dibanding batas anggaran yang aktif.</p></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2">{activeBudgetCards.slice(0,4).map(({budget,usage})=><BudgetMini key={budget.id} budget={budget} usage={usage} today={today}/>)}</div>{activeBudgetCards.length>4&&<p className="mt-3 text-xs font-semibold text-slate-500">+{activeBudgetCards.length-4} anggaran lainnya tersedia di menu Anggaran.</p>}</section>}
+
+    <section className="wm-panel mt-4"><div className="wm-panel-head"><div><h3>Posisi Hutang & Tagihan</h3><p>Kewajiban dan piutang yang masih terbuka.</p></div></div><div className="wm-flow-grid"><div><span>Sisa Hutang</span><b className="text-rose-600">{money(obligationSummary.debt)}</b></div><div><span>Sisa Tagihan</span><b className="text-rose-600">{money(obligationSummary.bill)}</b></div><div><span>Sisa Piutang</span><b className="text-emerald-600">{money(obligationSummary.receivable)}</b></div></div></section>
 
     <section className="wm-panel mt-4"><div className="wm-panel-head"><div><h3>Perbandingan Bulanan</h3><p>12 bulan terakhir, tanpa membebani layar dengan detail yang tidak penting.</p></div></div><div className="wm-report-chart" aria-label="Grafik perbandingan pemasukan dan pengeluaran">{months.map(item=><div key={item.key} className="wm-report-month"><div className="wm-report-bars"><i style={{height:`${Math.max(3,item.income/max*100)}%`}} title={`Pemasukan ${money(item.income)}`}/><b style={{height:`${Math.max(3,item.expense/max*100)}%`}} title={`Pengeluaran ${money(item.expense)}`}/></div><small>{item.label}</small></div>)}</div><div className="wm-report-legend"><span><i className="income"/>Pemasukan</span><span><i className="expense"/>Pengeluaran</span></div></section>
 
