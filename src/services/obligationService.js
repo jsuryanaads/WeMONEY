@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { getDeviceId, getDeviceName } from './deviceService'
 
 const SELECT = 'id,user_id,kind,title,counterparty,amount_total,amount_paid,due_date,status,is_recurring,recurrence,notes,created_at,updated_at'
 
@@ -56,6 +57,8 @@ export async function payObligation(userId, obligationId, payload) {
   const amount = Number(payload.amount)
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('Nominal pembayaran harus lebih besar dari 0.')
   if (!payload.wallet_id) throw new Error('Dompet pembayaran wajib dipilih.')
+  const deviceId = getDeviceId()
+  const deviceName = getDeviceName()
   const { data, error } = await supabase.rpc('pay_obligation', {
     p_obligation_id: obligationId,
     p_wallet_id: payload.wallet_id,
@@ -63,6 +66,8 @@ export async function payObligation(userId, obligationId, payload) {
     p_payment_date: payload.payment_date,
     p_category_id: payload.category_id || null,
     p_notes: payload.notes?.trim() || null,
+    p_device_id: deviceId,
+    p_device_name: deviceName,
   })
   if (error) throw error
   return data
