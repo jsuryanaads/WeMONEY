@@ -1,6 +1,6 @@
 export type TelegramIntent =
   | "transaction" | "balance" | "expense_summary" | "income_summary"
-  | "budget" | "wallets" | "help" | "unknown";
+  | "budget" | "wallets" | "help" | "ai_info" | "unknown";
 
 const normalize = (value: unknown) =>
   String(value || "").toLowerCase().normalize("NFKC").replace(/\s+/g, " ").trim();
@@ -20,6 +20,7 @@ export function routeTelegramIntent(text: string): TelegramIntent {
   if (includesAny(t, ["pemasukan", "pendapatan", "uang masuk", "income", "masuk berapa", "gaji bulan"])) return "income_summary";
   if (includesAny(t, ["budget", "anggaran"])) return "budget";
   if (includesAny(t, ["dompet", "wallet", "kas saya", "rekening saya"])) return "wallets";
+  if (includesAny(t, ["ai apa", "ai yang kamu gunakan", "ai yang dipakai", "model ai", "model apa", "pakai ai apa", "gunakan ai apa", "openrouter apa", "open router apa"])) return "ai_info";
   if (includesAny(t, ["bantuan", "help", "cara pakai", "perintah", "command", "menu", "apa saja", "bisa apa", "bisa apa saja", "kamu bisa", "yang bisa kamu", "fitur apa", "fiturnya apa"])) return "help";
 
   if (/(?:rp\.?\s*)?\d[\d.,]*\s*(?:juta|jt|ribu|rb|k|m)?/i.test(t)) return "transaction";
