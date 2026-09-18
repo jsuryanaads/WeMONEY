@@ -4,6 +4,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { createObligation, deleteObligation, getObligations, payObligation, updateObligation } from '../services/obligationService'
 import { getWallets } from '../services/walletService'
+import { classifyFinanceIntentWithAi } from '../services/financeIntentService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const today = () => new Date().toISOString().slice(0, 10)
@@ -36,6 +37,9 @@ export default function ObligationsPage() {
   const [wallets, setWallets] = useState([])
   const [paying, setPaying] = useState(null)
   const [payment, setPayment] = useState({ wallet_id: '', amount: '', payment_date: today(), notes: '' })
+  const [aiText, setAiText] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiNotice, setAiNotice] = useState('')
 
   const load = async () => {
     if (!user?.id) return
@@ -54,6 +58,16 @@ export default function ObligationsPage() {
   function edit(row) { setEditing(row); setForm({ kind: row.kind, title: row.title, counterparty: row.counterparty || '', amount_total: String(row.amount_total), amount_paid: String(row.amount_paid || 0), due_date: row.due_date || '', status: row.status, is_recurring: row.is_recurring, recurrence: row.recurrence || 'monthly', notes: row.notes || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   function cancel() { setEditing(null); setForm(blank()) }
   function startPay(row) { setPaying(row); setPayment({ wallet_id: wallets[0]?.id || '', amount: String(remaining(row)), payment_date: today(), notes: '' }) }
+  async function interpretWithAi() {
+    if (!aiText.trim()) return
+    setAiBusy(true); setAiNotice('Menganalisis...')
+    try {
+      const result = await classifyFinanceIntentWithAi(aiText, { today: today() })
+      if (result.intent !== 'create_obligation') throw new Error('Pesan ini belum dikenali sebagai hutang, piutang, atau tagihan.')
+      setForm(prev => ({ ...prev, kind: result.kind || prev.kind, title: result.title || prev.title, counterparty: result.counterparty || prev.counterparty, amount_total: result.amount_total || prev.amount_total, due_date: result.due_date || prev.due_date, is_recurring: Boolean(result.is_recurring), recurrence: result.recurrence || prev.recurrence, notes: result.notes || prev.notes }))
+      setAiNotice('Draft terisi dari ' + (result.source || 'Hybrid AI') + ' (confidence ' + Math.round(Number(result.confidence || 0) * 100) + '%). Periksa lalu simpan.')
+    } catch (e) { setAiNotice(e.message || 'AI belum dapat memahami pesan tersebut.') } finally { setAiBusy(false) }
+  }
   async function savePayment(event) { event.preventDefault(); setBusy(true); setError(''); try { await payObligation(user.id, paying.id, payment); setPaying(null); await load() } catch (e) { setError(e.message || 'Gagal mencatat pembayaran.') } finally { setBusy(false) } }
   async function save(event) {
     event.preventDefault(); setBusy(true); setError('')
@@ -79,8 +93,13 @@ export default function ObligationsPage() {
       <Summary title="Sisa Piutang" value={summary.receivable.remaining} icon={HandCoins} />
       <Summary title="Sisa Tagihan" value={summary.bill.remaining} icon={ReceiptText} />
     </section>
+    <section className={card + ' mt-5'}>
+      <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-extrabold">Quick Capture dengan Hybrid AI</h2><p className="text-sm text-slate-400">Tulis bebas. AI hanya membuat draft; tidak ada data yang disimpan otomatis.</p></div><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">AI → Draft → Konfirmasi</span></div>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row"><input className={input + ' mt-0'} value={aiText} onChange={e=>setAiText(e.target.value)} placeholder="Contoh: Bayar listrik 350rb tanggal 20"/><button type="button" disabled={aiBusy || !aiText.trim()} onClick={interpretWithAi} className={button}>{aiBusy ? 'Menganalisis...' : 'Analisis AI'}</button></div>
+      {aiNotice && <p className="mt-2 text-xs font-semibold text-slate-500">{aiNotice}</p>}
+    </section>
     <form onSubmit={save} className={`${card} mt-5 grid gap-4 md:grid-cols-2`}>
-      <div className="md:col-span-2 flex items-start justify-between gap-3"><div><h2 className="text-lg font-extrabold">{editing ? 'Edit Catatan' : 'Tambah Hutang / Tagihan'}</h2><p className="text-sm text-slate-400">Versi awal menyimpan catatan kewajiban tanpa mengubah transaksi atau saldo.</p></div>}{editing && <button type="button" onClick={cancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Batal edit"><X size={19}/></button>}</div>
+      <div className="md:col-span-2 flex items-start justify-between gap-3"><div><h2 className="text-lg font-extrabold">{editing ? 'Edit Catatan' : 'Tambah Hutang / Tagihan'}</h2><p className="text-sm text-slate-400">AI hanya mengisi draft. Penyimpanan tetap melalui validasi form dan konfirmasi pengguna.</p></div>}{editing && <button type="button" onClick={cancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Batal edit"><X size={19}/></button>}</div>
       <label className="text-sm font-semibold">Jenis<select className={input} value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value })}><option value="debt">Hutang</option><option value="receivable">Piutang</option><option value="bill">Tagihan</option></select></label>
       <label className="text-sm font-semibold">Nama / Judul<input required className={input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Contoh: Hutang ke Andi / Internet"/></label>
       <label className="text-sm font-semibold">Pihak terkait<input className={input} value={form.counterparty} onChange={e => setForm({ ...form, counterparty: e.target.value })} placeholder="Nama orang / penyedia"/></label>
