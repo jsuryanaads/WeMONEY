@@ -31,14 +31,40 @@ begin
     select 1 from pg_policies
     where schemaname='public'
       and tablename='telegram_conversation_state'
-      and policyname='telegram conversation owner write'
+      and policyname='telegram conversation owner insert'
   ) then
-    create policy "telegram conversation owner write"
+    create policy "telegram conversation owner insert"
       on public.telegram_conversation_state
-      for all
+      for insert
+      to authenticated
+      with check ((select auth.uid()) = user_id);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename='telegram_conversation_state'
+      and policyname='telegram conversation owner update'
+  ) then
+    create policy "telegram conversation owner update"
+      on public.telegram_conversation_state
+      for update
       to authenticated
       using ((select auth.uid()) = user_id)
       with check ((select auth.uid()) = user_id);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename='telegram_conversation_state'
+      and policyname='telegram conversation owner delete'
+  ) then
+    create policy "telegram conversation owner delete"
+      on public.telegram_conversation_state
+      for delete
+      to authenticated
+      using ((select auth.uid()) = user_id);
   end if;
 end
 $$;
