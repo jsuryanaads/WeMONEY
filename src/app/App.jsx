@@ -11,6 +11,7 @@ import BudgetsPage from '../pages/BudgetsPage'
 import SettingsPage from '../pages/SettingsPage'
 import TelegramPage from '../pages/TelegramPage'
 import GuidePage from '../pages/GuidePage'
+import ObligationsPage from '../pages/ObligationsPage'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import ForgotPassword from '../pages/ForgotPassword'
@@ -51,6 +52,7 @@ export default function App() {
       <Route path="/kategori" element={<FinancePage section="kategori" />} />
       <Route path="/dompet" element={<WalletsPage />} />
       <Route path="/anggaran" element={<BudgetsPage />} />
+      <Route path="/hutang-tagihan" element={<ObligationsPage />} />
       <Route path="/laporan" element={<ReportsPage />} />
       <Route path="/pengaturan" element={<SettingsPage />} />
       <Route path="/telegram" element={<TelegramPage />} />
