@@ -26,7 +26,9 @@ create or replace function public.pay_obligation(
   p_amount numeric,
   p_payment_date date,
   p_category_id uuid default null,
-  p_notes text default null
+  p_notes text default null,
+  p_device_id text default null,
+  p_device_name text default null
 )
 returns jsonb
 language plpgsql
@@ -79,8 +81,8 @@ begin
     case when ob.kind = 'receivable' then 'Penerimaan: ' else 'Pembayaran: ' end || ob.title,
     coalesce(p_notes, ob.notes),
     'obligation',
-    null,
-    null
+    p_device_id,
+    p_device_name
   )
   returning * into tx;
 
@@ -107,6 +109,6 @@ begin
 end;
 $$;
 
-revoke all on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text) from public;
-revoke all on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text) from anon;
-grant execute on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text) to authenticated;
+revoke all on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text, text, text) from public;
+revoke all on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text, text, text) from anon;
+grant execute on function public.pay_obligation(uuid, uuid, numeric, date, uuid, text, text, text) to authenticated;
