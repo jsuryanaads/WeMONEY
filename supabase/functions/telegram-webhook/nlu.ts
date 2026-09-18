@@ -10,7 +10,7 @@ export function jakartaToday() {
     day: "2-digit",
   }).formatToParts(new Date());
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  return \`\${map.year}-\${map.month}-\${map.day}\`;
+  return map.year + "-" + map.month + "-" + map.day;
 }
 
 function shiftDate(iso:string, days=0, months=0) {
@@ -18,7 +18,7 @@ function shiftDate(iso:string, days=0, months=0) {
   const date = new Date(Date.UTC(y, m - 1, d));
   if (months) date.setUTCMonth(date.getUTCMonth() + months);
   if (days) date.setUTCDate(date.getUTCDate() + days);
-  return \`\${date.getUTCFullYear()}-\${pad(date.getUTCMonth()+1)}-\${pad(date.getUTCDate())}\`;
+  return date.getUTCFullYear() + "-" + pad(date.getUTCMonth()+1) + "-" + pad(date.getUTCDate());
 }
 
 export function extractTransactionDate(text:string) {
@@ -33,10 +33,10 @@ export function extractTransactionDate(text:string) {
   if (/\b(tadi|tadi\s+(?:pagi|siang|sore|malam)|hari\s+ini|today)\b/.test(t)) return today;
 
   const explicit = t.match(/\b(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})\b/);
-  if (explicit) return \`\${explicit[1]}-\${pad(Number(explicit[2]))}-\${pad(Number(explicit[3]))}\`;
+  if (explicit) return explicit[1] + "-" + pad(Number(explicit[2])) + "-" + pad(Number(explicit[3]));
 
   const dmy = t.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})\b/);
-  if (dmy) return \`\${dmy[3]}-\${pad(Number(dmy[2]))}-\${pad(Number(dmy[1]))}\`;
+  if (dmy) return dmy[3] + "-" + pad(Number(dmy[2])) + "-" + pad(Number(dmy[1]));
 
   return today;
 }
@@ -50,7 +50,7 @@ export function transactionDateLabel(iso:string) {
     month:"long",
     year:"numeric",
     timeZone:"Asia/Jakarta"
-  }).format(new Date(\`\${iso}T12:00:00+07:00\`));
+  }).format(new Date(iso + "T12:00:00+07:00"));
 }
 
 export function normalizeNaturalLanguage(text:string) {
