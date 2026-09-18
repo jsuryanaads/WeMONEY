@@ -1,0 +1,1 @@
+revoke execute on function public.has_telegram_bot_token() from anon;
