@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowDownRight, ArrowUpRight, BarChart3, Lightbulb, Target, TrendingDown, TrendingUp } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
-import { getTransactions } from '../services/transactionService'
+import { getTransactionsForPeriod } from '../services/transactionService'
 import { calculateBudgetUsage, getBudgets } from '../services/budgetService'
 import { getObligations } from '../services/obligationService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+const reportPeriod = () => { const now = new Date(); const start = new Date(now.getFullYear(), now.getMonth() - 11, 1); return { start: `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-01`, end: localToday() } }
 
 export default function ReportsPage() {
   const { user } = useAuth()
   const [rows, setRows] = useState([]); const [budgets, setBudgets] = useState([]); const [obligations, setObligations] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
-  const load = async () => { if (!user?.id) return; setLoading(true); setError(''); try { const [tx, bs, obs] = await Promise.all([getTransactions(user.id, 1000), getBudgets(user.id, { activeOnly: true }), getObligations(user.id)]); setRows(tx); setBudgets(bs); setObligations(obs) } catch (e) { setError(e.message || 'Gagal memuat laporan.') } finally { setLoading(false) } }
+  const load = async () => { if (!user?.id) return; setLoading(true); setError(''); try { const period = reportPeriod(); const [tx, bs, obs] = await Promise.all([getTransactionsForPeriod(user.id, period.start, period.end), getBudgets(user.id, { activeOnly: true }), getObligations(user.id)]); setRows(tx); setBudgets(bs); setObligations(obs) } catch (e) { setError(e.message || 'Gagal memuat laporan.') } finally { setLoading(false) } }
   useEffect(() => { load(); const refresh = () => load(); window.addEventListener('wemoney:data-changed', refresh); return () => window.removeEventListener('wemoney:data-changed', refresh) }, [user?.id])
 
   const months = useMemo(() => { const now = new Date(); const map = {}; for (let i=11;i>=0;i--) { const d=new Date(now.getFullYear(),now.getMonth()-i,1); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; map[key]={key,label:`${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`,income:0,expense:0} } rows.forEach(tx=>{const key=String(tx.transaction_date||'').slice(0,7);if(map[key]&&(tx.type==='income'||tx.type==='expense'))map[key][tx.type]+=Number(tx.amount||0)});return Object.values(map) },[rows])
