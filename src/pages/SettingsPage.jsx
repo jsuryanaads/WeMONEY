@@ -26,7 +26,6 @@ export default function SettingsPage() {
   const [modal, setModal] = useState(null)
   const [resetText, setResetText] = useState('')
   const [requestText, setRequestText] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
@@ -68,12 +67,11 @@ export default function SettingsPage() {
     e.preventDefault(); setError(''); setPasswordSaved(false)
     if (newPassword.length < 8) return setError('Password baru minimal 8 karakter.')
     if (newPassword !== confirmPassword) return setError('Konfirmasi password tidak sama.')
-    if (currentPassword && currentPassword === newPassword) return setError('Password baru harus berbeda dari password lama.')
     setBusy(true)
     try {
       const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
       if (authError) throw authError
-      setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(true)
+      setNewPassword(''); setConfirmPassword(''); setPasswordSaved(true)
     } catch (e) { setError(e.message || 'Gagal mengganti password.') } finally { setBusy(false) }
   }
 
@@ -124,7 +122,7 @@ export default function SettingsPage() {
 
   function closeModal() {
     if (busy || deviceBusy) return
-    setModal(null); setResetText(''); setRequestText(''); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(false)
+    setModal(null); setResetText(''); setRequestText(''); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(false)
   }
 
   const remaining = stats ? statItems.filter(([, key]) => Number(stats[key] || 0) > 0) : []
