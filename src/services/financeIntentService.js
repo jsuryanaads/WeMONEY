@@ -16,7 +16,7 @@ function parseAmount(text) {
 function isoDate(day, base = new Date()) {
   const d = Number(day)
   if (!Number.isInteger(d) || d < 1 || d > 31) return ''
-  return new Date(base.getFullYear(), base.getMonth(), d).toISOString().slice(0, 10)
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
 function localIntent(text) {
