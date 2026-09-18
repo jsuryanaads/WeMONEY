@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, CalendarClock, CheckCircle2, Edit3, HandCoins, Plus, ReceiptText, Search, Trash2, X } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
-import { createObligation, deleteObligation, getObligations, updateObligation } from '../services/obligationService'
+import { createObligation, deleteObligation, getObligations, payObligation, updateObligation } from '../services/obligationService'
+import { getWallets } from '../services/walletService'
 
 const money = value => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0))
 const today = () => new Date().toISOString().slice(0, 10)
@@ -32,6 +33,9 @@ export default function ObligationsPage() {
   const [editing, setEditing] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [wallets, setWallets] = useState([])
+  const [paying, setPaying] = useState(null)
+  const [payment, setPayment] = useState({ wallet_id: '', amount: '', payment_date: today(), notes: '' })
 
   const load = async () => {
     if (!user?.id) return
@@ -39,6 +43,7 @@ export default function ObligationsPage() {
     catch (e) { setError(e.message || 'Gagal memuat hutang dan tagihan.') }
   }
   useEffect(() => { load() }, [user?.id, tab, status, search])
+  useEffect(() => { if (user?.id) getWallets(user.id).then(setWallets).catch(() => setWallets([])) }, [user?.id])
 
   const summary = useMemo(() => rows.reduce((a, row) => {
     a[row.kind].total += Number(row.amount_total || 0); a[row.kind].remaining += remaining(row)
@@ -48,6 +53,8 @@ export default function ObligationsPage() {
 
   function edit(row) { setEditing(row); setForm({ kind: row.kind, title: row.title, counterparty: row.counterparty || '', amount_total: String(row.amount_total), amount_paid: String(row.amount_paid || 0), due_date: row.due_date || '', status: row.status, is_recurring: row.is_recurring, recurrence: row.recurrence || 'monthly', notes: row.notes || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   function cancel() { setEditing(null); setForm(blank()) }
+  function startPay(row) { setPaying(row); setPayment({ wallet_id: wallets[0]?.id || '', amount: String(remaining(row)), payment_date: today(), notes: '' }) }
+  async function savePayment(event) { event.preventDefault(); setBusy(true); setError(''); try { await payObligation(user.id, paying.id, payment); setPaying(null); await load() } catch (e) { setError(e.message || 'Gagal mencatat pembayaran.') } finally { setBusy(false) } }
   async function save(event) {
     event.preventDefault(); setBusy(true); setError('')
     try {
@@ -73,7 +80,7 @@ export default function ObligationsPage() {
       <Summary title="Sisa Tagihan" value={summary.bill.remaining} icon={ReceiptText} />
     </section>
     <form onSubmit={save} className={`${card} mt-5 grid gap-4 md:grid-cols-2`}>
-      <div className="md:col-span-2 flex items-start justify-between gap-3"><div><h2 className="text-lg font-extrabold">{editing ? 'Edit Catatan' : 'Tambah Hutang / Tagihan'}</h2><p className="text-sm text-slate-400">Versi awal menyimpan catatan kewajiban tanpa mengubah transaksi atau saldo.</p></div>{editing && <button type="button" onClick={cancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Batal edit"><X size={19}/></button>}</div>
+      <div className="md:col-span-2 flex items-start justify-between gap-3"><div><h2 className="text-lg font-extrabold">{editing ? 'Edit Catatan' : 'Tambah Hutang / Tagihan'}</h2><p className="text-sm text-slate-400">Versi awal menyimpan catatan kewajiban tanpa mengubah transaksi atau saldo.</p></div>{paying && <div className="md:col-span-2 rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/30"><div className="mb-3 flex items-center justify-between"><div><b>Pembayaran: {paying.title}</b><p className="text-xs text-slate-500">Sisa {money(remaining(paying))}. Pembayaran akan menjadi transaksi otomatis.</p></div><button type="button" onClick={()=>setPaying(null)} aria-label="Tutup pembayaran"><X size={18}/></button></div><form onSubmit={savePayment} className="grid gap-3 sm:grid-cols-3"><label className="text-sm font-semibold">Dompet<select required className={input} value={payment.wallet_id} onChange={e=>setPayment({...payment,wallet_id:e.target.value})}><option value="">Pilih dompet</option>{wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label><label className="text-sm font-semibold">Nominal<input required min="1" max={remaining(paying)} step="1" type="number" className={input} value={payment.amount} onChange={e=>setPayment({...payment,amount:e.target.value})}/></label><label className="text-sm font-semibold">Tanggal<input required type="date" className={input} value={payment.payment_date} onChange={e=>setPayment({...payment,payment_date:e.target.value})}/></label><label className="text-sm font-semibold sm:col-span-2">Catatan<input className={input} value={payment.notes} onChange={e=>setPayment({...payment,notes:e.target.value})}/></label><div className="flex items-end gap-2"><button disabled={busy||!wallets.length} className={button}>{busy?'Memproses...':'Konfirmasi Pembayaran'}</button><button type="button" onClick={()=>setPaying(null)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold dark:border-slate-700">Batal</button></div></form></div>}{editing && <button type="button" onClick={cancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Batal edit"><X size={19}/></button>}</div>
       <label className="text-sm font-semibold">Jenis<select className={input} value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value })}><option value="debt">Hutang</option><option value="receivable">Piutang</option><option value="bill">Tagihan</option></select></label>
       <label className="text-sm font-semibold">Nama / Judul<input required className={input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Contoh: Hutang ke Andi / Internet"/></label>
       <label className="text-sm font-semibold">Pihak terkait<input className={input} value={form.counterparty} onChange={e => setForm({ ...form, counterparty: e.target.value })} placeholder="Nama orang / penyedia"/></label>
@@ -94,7 +101,7 @@ export default function ObligationsPage() {
       <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
         {rows.length ? rows.map(row => <article key={row.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40"><CalendarClock size={19}/></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><b className="truncate">{row.title}</b><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold dark:bg-slate-800">{labelKind(row.kind)}</span>{row.status==='paid'&&<CheckCircle2 size={15} className="text-emerald-500"/>}</div><p className="text-xs text-slate-400">{row.counterparty || 'Tanpa pihak terkait'} · {dueLabel(row.due_date,row.status)}{row.is_recurring?' · '+(row.recurrence==='monthly'?'Bulanan':'Tahunan'):''}</p></div></div>
-          <div className="flex items-center justify-between gap-3 sm:justify-end"><div className="text-right"><b className="block">{money(remaining(row))}</b><small className="text-xs text-slate-400">sisa dari {money(row.amount_total)}</small></div><button onClick={()=>edit(row)} className="rounded-lg p-2 text-slate-400 hover:text-blue-600" aria-label="Edit"><Edit3 size={17}/></button><button onClick={()=>remove(row.id)} className="rounded-lg p-2 text-slate-400 hover:text-rose-600" aria-label="Hapus"><Trash2 size={17}/></button></div>
+          <div className="flex items-center justify-between gap-3 sm:justify-end"><div className="flex items-center gap-1"><button disabled={row.status!=='open'} onClick={()=>startPay(row)} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Bayar</button><div className="text-right"><b className="block">{money(remaining(row))}</b><small className="text-xs text-slate-400">sisa dari {money(row.amount_total)}</small></div></div><button onClick={()=>edit(row)} className="rounded-lg p-2 text-slate-400 hover:text-blue-600" aria-label="Edit"><Edit3 size={17}/></button><button onClick={()=>remove(row.id)} className="rounded-lg p-2 text-slate-400 hover:text-rose-600" aria-label="Hapus"><Trash2 size={17}/></button></div>
         </article>) : <div className="py-10 text-center text-sm text-slate-400"><AlertCircle size={20} className="mx-auto mb-2"/>Belum ada data.</div>}
       </div>
     </section>
