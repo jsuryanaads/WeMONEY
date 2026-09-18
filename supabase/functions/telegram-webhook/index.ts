@@ -73,11 +73,23 @@ if(intent!=="transaction"&&intent!=="unknown"){
     await tg("sendMessage",{chat_id:chat,text,parse_mode:"Markdown"});return
   }
   if(intent==="balance"){
-    const s=summarizeTransactions(rows||[]);
-    await tg("sendMessage",{chat_id:chat,text:`💰 *Ringkasan ${monthLabel()}*\\n\\nPemasukan: ${formatRupiah(s.income)}\\nPengeluaran: ${formatRupiah(s.expense)}\\nSelisih: ${formatRupiah(s.net)}\\n\\nUntuk saldo per dompet, kirim: "dompet saya"`,parse_mode:"Markdown"});return
+    const{data:ws,error:we}=await db.from("wallets").select("id,name,initial_balance").eq("user_id",cn.user_id).eq("is_active",true).order("created_at",{ascending:true});
+    const{data:ts,error:te}=await db.from("transactions").select("wallet_id,type,amount").eq("user_id",cn.user_id);
+    const{data:xs,error:xe}=await db.from("transfers").select("source_wallet_id,destination_wallet_id,amount").eq("user_id",cn.user_id);
+    if(we||te||xe){await tg("sendMessage",{chat_id:chat,text:"❌ Gagal membaca saldo."});return}
+    const balances=Object.fromEntries((ws||[]).map((w:any)=>[w.id,Number(w.initial_balance)||0]));
+    for(const t of ts||[])if(balances[t.wallet_id]!==undefined)balances[t.wallet_id]+=t.type==="income"?Number(t.amount):-Number(t.amount);
+    for(const x of xs||[]){if(balances[x.source_wallet_id]!==undefined)balances[x.source_wallet_id]-=Number(x.amount);if(balances[x.destination_wallet_id]!==undefined)balances[x.destination_wallet_id]+=Number(x.amount)}
+    const total=(ws||[]).reduce((s:number,w:any)=>s+(balances[w.id]||0),0);
+    await tg("sendMessage",{chat_id:chat,text:(ws||[]).length?\`💰 *Saldo Saat Ini*\\n\\n\${(ws||[]).map((w:any)=>\`• *\${w.name}*: \${formatRupiah(balances[w.id]||0)}\`).join("\\n")}\\n\\n*Total: \${formatRupiah(total)}*\`:"Belum ada dompet aktif.",parse_mode:"Markdown"});return
   }
   if(intent==="budget"){
-    await tg("sendMessage",{chat_id:chat,text:`🎯 *Anggaran ${monthLabel()}*\\n\\nFitur pembacaan anggaran Telegram sedang disiapkan. Data transaksi tetap tersedia melalui "pengeluaran bulan ini".`,parse_mode:"Markdown"});return
+    const{data:budgets,error:be}=await db.from("budgets").select("name,amount,period,start_date,end_date,category:categories(name)").eq("user_id",cn.user_id).eq("is_active",true).order("start_date",{ascending:false});
+    if(be){await tg("sendMessage",{chat_id:chat,text:"❌ Gagal membaca anggaran."});return}
+    const active=(budgets||[]).filter((b:any)=>b.start_date<=endDate&&(b.end_date?b.end_date>=startDate:true)).slice(0,8);
+    if(!active.length){await tg("sendMessage",{chat_id:chat,text:\`🎯 *Anggaran \${monthLabel()}*\\n\\nBelum ada anggaran aktif untuk periode ini.\`,parse_mode:"Markdown"});return}
+    const lines=active.map((b:any)=>{const actual=(rows||[]).filter((t:any)=>t.type==="expense"&&(!b.category?.name||t.category?.name===b.category.name)).reduce((s:number,t:any)=>s+Number(t.amount||0),0);const limit=Number(b.amount||0);const pct=limit>0?Math.round(actual/limit*100):0;return \`• *\${b.name}*: \${formatRupiah(actual)} / \${formatRupiah(limit)} (\${pct}%)\`});
+    await tg("sendMessage",{chat_id:chat,text:\`🎯 *Anggaran \${monthLabel()}*\\n\\n\${lines.join("\\n")}\`,parse_mode:"Markdown"});return
   }
 }
 const p=parse(raw);if(!p){await tg("sendMessage",{chat_id:chat,text:"Format belum terbaca. Contoh: `beli makan 25rb` atau `uang masuk dari usaha 500rb`.",parse_mode:"Markdown"});return}const ai=await classify(cn.user_id,p);await db.from("telegram_pending_transactions").delete().eq("telegram_chat_id",chat);const{error}=await db.from("telegram_pending_transactions").insert({user_id:cn.user_id,telegram_chat_id:chat,transaction_type:p.type,amount:p.amount,description:p.description,wallet_id:ai.walletId,category_id:ai.categoryId,wallet_name:ai.walletName,category_name:ai.categoryName});if(error){await tg("sendMessage",{chat_id:chat,text:`❌ Gagal membuat draft: ${error.message}`});return}await sendConfirmation(chat,{transaction_type:p.type,amount:p.amount,description:p.description,wallet_id:ai.walletId,category_id:ai.categoryId,wallet_name:ai.walletName,category_name:ai.categoryName,categoryCandidates:ai.categoryCandidates,ai_confidence:ai.confidence,ai_source:ai.source,ai_model:ai.model});}catch(e){console.error("telegram process",e)}}
