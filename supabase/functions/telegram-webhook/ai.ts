@@ -18,7 +18,7 @@ Explicit amount: ${input.amount}
 Explicit date: ${input.transaction_date}
 Existing categories: ${JSON.stringify(input.categories)}
 Existing wallets: ${JSON.stringify(input.wallets)}
-Never invent a category or wallet. Preserve the explicit amount and date.
+Never invent a category or wallet. Preserve the explicit amount and date exactly. If the category is not present in Existing categories, do not invent one.
 Return: type, amount, transaction_date, description, merchant, category_name, wallet_name, confidence, reason.`;
 
   const controller = new AbortController();
