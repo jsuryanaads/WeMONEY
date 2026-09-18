@@ -20,7 +20,7 @@ export function routeTelegramIntent(text: string): TelegramIntent {
   if (includesAny(t, ["pemasukan", "pendapatan", "uang masuk", "income", "masuk berapa", "gaji bulan"])) return "income_summary";
   if (includesAny(t, ["budget", "anggaran"])) return "budget";
   if (includesAny(t, ["dompet", "wallet", "kas saya", "rekening saya"])) return "wallets";
-  if (includesAny(t, ["bantuan", "help", "cara pakai", "perintah", "command", "menu"])) return "help";
+  if (includesAny(t, ["bantuan", "help", "cara pakai", "perintah", "command", "menu", "apa saja", "bisa apa", "bisa apa saja", "kamu bisa", "yang bisa kamu", "fitur apa", "fiturnya apa"])) return "help";
 
   if (/(?:rp\.?\s*)?\d[\d.,]*\s*(?:juta|jt|ribu|rb|k|m)?/i.test(t)) return "transaction";
   if (includesAny(t, ["beli ", "bayar ", "membayar ", "pemasukan ", "pengeluaran ", "uang masuk ", "uang keluar "])) return "transaction";
