@@ -148,6 +148,7 @@ tag: android-vX.Y.Z
 Status target:
 
 - Web `v1.7.4`: release terpisah.
+- resources/icon.png menjadi satu-satunya master icon
 - Android `android-v1.7.4`: target production berikutnya.
 - Android Capacitor debug build: berhasil.
 - Android production signed APK/AAB: wajib diverifikasi sebelum dinyatakan selesai.
