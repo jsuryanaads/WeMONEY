@@ -132,3 +132,32 @@
     min-height:3.75rem;
   }
 }
+
+
+/* V1.7.5 Live Fintech Motion — visual-only enhancement. */
+.wm-shell::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(520px 260px at 8% 18%,color-mix(in srgb,var(--wm-accent) 6%,transparent),transparent 70%),radial-gradient(620px 320px at 92% 72%,color-mix(in srgb,var(--wm-primary) 5%,transparent),transparent 72%);animation:wm-ambient 12s ease-in-out infinite alternate}
+.wm-shell>*{position:relative;z-index:1}
+.wm-sidebar{transition:transform .2s ease,box-shadow .25s ease,border-color .25s ease}
+.wm-sidebar:hover{box-shadow:0 24px 65px rgb(2 6 23/.28)}
+.wm-header{transition:box-shadow .25s ease,border-color .25s ease,background-color .25s ease}
+.wm-header:hover{box-shadow:0 16px 42px rgb(2 6 23/.13)}
+.wm-nav-item{transition:transform .15s ease,background-color .15s ease,color .15s ease,opacity .15s ease}
+.wm-nav-item:hover{transform:translateX(2px)}
+.wm-nav-active{animation:wm-nav-pulse 3.5s ease-in-out infinite}
+.wm-metric{animation:wm-rise .45s ease both}
+.wm-metric:nth-child(2){animation-delay:.05s}.wm-metric:nth-child(3){animation-delay:.1s}
+.wm-flagship{animation:wm-rise .5s ease both}.wm-flagship:nth-child(2){animation-delay:.08s}
+.wm-panel{animation:wm-rise .55s ease both}
+.wm-panel:hover{border-color:color-mix(in srgb,var(--wm-primary) 18%,var(--wm-border));box-shadow:0 18px 42px rgb(2 6 23/.095)}
+.wm-feature-icon{position:relative;overflow:hidden}
+.wm-feature-icon::after{content:"";position:absolute;inset:-45%;background:linear-gradient(115deg,transparent 35%,rgb(255 255 255/.28) 48%,transparent 60%);transform:translateX(-55%) rotate(12deg);animation:wm-shine 4.5s ease-in-out infinite}
+.wm-live-dot.is-live{animation:wm-live 1.8s ease-in-out infinite}
+.wm-fab{animation:wm-fab-breathe 2.8s ease-in-out infinite}
+@keyframes wm-rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes wm-ambient{from{transform:translate3d(-1%,0,0) scale(1)}to{transform:translate3d(1%,1%,0) scale(1.025)}}
+@keyframes wm-nav-pulse{0%,100%{box-shadow:0 10px 24px color-mix(in srgb,var(--wm-primary) 24%,transparent)}50%{box-shadow:0 12px 30px color-mix(in srgb,var(--wm-primary) 34%,transparent)}}
+@keyframes wm-live{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.22);opacity:.72}}
+@keyframes wm-fab-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes wm-shine{0%,55%{transform:translateX(-60%) rotate(12deg)}75%,100%{transform:translateX(65%) rotate(12deg)}}
+@media(prefers-reduced-motion:reduce){.wm-shell::before,.wm-nav-active,.wm-metric,.wm-flagship,.wm-panel,.wm-feature-icon::after,.wm-live-dot.is-live,.wm-fab{animation:none!important}}
+@media(max-width:639px){.wm-shell::before{opacity:.65}.wm-panel:hover{box-shadow:0 9px 24px rgb(2 6 23/.07)}}
