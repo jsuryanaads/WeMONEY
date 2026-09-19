@@ -89,8 +89,9 @@ jobs:
           file resources/icon.png
           echo "Using WeMONEY master icon: resources/icon.png"
 
-      - name: Build web
+      - name: Build web for Capacitor
         env:
+          CAPACITOR_BUILD: "true"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
