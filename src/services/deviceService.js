@@ -2,22 +2,52 @@ import { supabase } from '../lib/supabase'
 
 const DEVICE_KEY = 'wemoney-device-id'
 const DEVICE_NAME_KEY = 'wemoney-device-name'
+const DEVICE_COOKIE = 'wemoney_device_id'
 
 function makeDeviceId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
   return `dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+function getCookieDeviceId() {
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${DEVICE_COOKIE}=([^;]+)`))
+    return match ? decodeURIComponent(match[1]) : ''
+  } catch {
+    return ''
+  }
+}
+
+function setCookieDeviceId(id) {
+  try {
+    document.cookie = `${DEVICE_COOKIE}=${encodeURIComponent(id)}; Max-Age=31536000; Path=/; SameSite=Lax`
+  } catch {}
+}
+
 export function getDeviceId() {
   try {
-    let id = window.localStorage.getItem(DEVICE_KEY)
-    if (!id) {
-      id = makeDeviceId()
-      window.localStorage.setItem(DEVICE_KEY, id)
+    const local = window.localStorage.getItem(DEVICE_KEY)?.trim()
+    if (local) {
+      setCookieDeviceId(local)
+      return local
     }
+
+    const cookie = getCookieDeviceId()
+    if (cookie) {
+      window.localStorage.setItem(DEVICE_KEY, cookie)
+      return cookie
+    }
+
+    const id = makeDeviceId()
+    window.localStorage.setItem(DEVICE_KEY, id)
+    setCookieDeviceId(id)
     return id
   } catch {
-    return makeDeviceId()
+    const cookie = getCookieDeviceId()
+    if (cookie) return cookie
+    const id = makeDeviceId()
+    setCookieDeviceId(id)
+    return id
   }
 }
 
@@ -64,7 +94,20 @@ export async function getMyDevices() {
   return data ?? []
 }
 
+export async function updateCurrentDeviceName(userId, name) {
+  if (!userId) throw new Error('User tidak valid.')
+  const value = setDeviceName(name)
+  const { error } = await supabase
+    .from('user_devices')
+    .update({ device_name: value, updated_at: new Date().toISOString(), last_seen_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('device_id', getDeviceId())
+  if (error) throw error
+  return value
+}
+
 export async function revokeDevice(deviceId) {
+  if (!deviceId) throw new Error('Perangkat tidak valid.')
   const { error } = await supabase.rpc('revoke_my_device', { p_device_id: deviceId })
   if (error) throw error
   return true
