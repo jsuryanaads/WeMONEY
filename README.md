@@ -1,12 +1,24 @@
 # We MONEY
 
-**Versi saat ini: V1.6.0**
+**Versi saat ini: V1.7.0**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
 We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfokus pada transaksi, dompet, anggaran, laporan, hutang/piutang/tagihan, serta integrasi AI dan Telegram.
 
 ## Riwayat Versi
+
+### V1.7.0 — Notification Center
+**Status:** Current
+
+Perubahan:
+- Mengaktifkan ikon **Notifikasi** pada header menjadi Notification Center.
+- Menampilkan pengingat hutang, piutang, dan tagihan yang terlambat atau jatuh tempo dalam 3 hari.
+- Menampilkan peringatan anggaran saat penggunaan mencapai 80% atau lebih.
+- Notifikasi memiliki tautan langsung ke modul terkait.
+- Mendukung **Tandai sudah dibaca** dan **Tandai semua sudah dibaca**.
+- Status baca disimpan per pengguna pada browser dan tidak mengubah data keuangan.
+- Tidak ada mutasi transaksi atau kewajiban yang dilakukan oleh sistem notifikasi.
 
 ### V1.6.1 — Security & Performance Hardening
 **Status:** Current
