@@ -5,7 +5,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { exportTransactionsCsv, getDataStats, requestAccountDeletion, resetFinancialData } from '../services/dataService'
-import { getDeviceId, getMyDevices, revokeDevice, updateCurrentDeviceName } from '../services/deviceService'
+import { getDeviceId, getMyDevices, normalizeMyDevices, revokeDevice, updateCurrentDeviceName } from '../services/deviceService'
 
 const input = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'
 const button = 'rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
@@ -41,7 +41,7 @@ export default function SettingsPage() {
 
   const loadDevices = async () => {
     try {
-      const data = await getMyDevices()
+      const data = await normalizeMyDevices()
       setDevices(data)
       const current = data.find(item => item.device_id === getDeviceId())
       setDeviceNameState(current?.device_name || '')
