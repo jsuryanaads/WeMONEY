@@ -39,12 +39,21 @@ export default function NotificationCenter() {
   useEffect(() => {
     if (!user?.id) return
     let cancelled = false
-    setLoading(true)
-    getFinancialNotifications(user.id)
-      .then(data => { if (!cancelled) setItems(data) })
-      .catch(() => { if (!cancelled) setItems([]) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+    const refresh = () => {
+      setLoading(true)
+      getFinancialNotifications(user.id)
+        .then(data => { if (!cancelled) setItems(data) })
+        .catch(() => { if (!cancelled) setItems([]) })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }
+    refresh()
+    const interval = window.setInterval(refresh, 60_000)
+    window.addEventListener('focus', refresh)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+    }
   }, [user?.id])
 
   useEffect(() => {
