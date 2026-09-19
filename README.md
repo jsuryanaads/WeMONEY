@@ -8,6 +8,16 @@ We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfok
 
 ## Riwayat Versi
 
+### V1.6.1 — Security & Performance Hardening
+**Status:** Current
+
+Perubahan:
+- Menambahkan index untuk foreign key obligation_payments.transaction_id.
+- Mengoptimalkan policy RLS dengan evaluasi auth.uid() sekali per statement pada koneksi Telegram dan modul Anggaran.
+- Menambahkan deny policy eksplisit untuk tabel internal Telegram dan mencabut privilege client langsung.
+- Menjadikan penghapusan transaksi dan receipt atomic melalui RPC terproteksi ownership.
+- Memperkuat jalur database tanpa memberikan akses mutasi finansial kepada AI.
+
 Setiap perubahan versi wajib dicatat di README ini. `package.json` menjadi **single source of truth** untuk nomor versi aplikasi, sedangkan README menjadi dokumentasi perubahan versi dan fitur.
 
 ### V1.6.0 — Pengaturan Keamanan Akun
