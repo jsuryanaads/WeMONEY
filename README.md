@@ -1,15 +1,24 @@
 # We MONEY
 
-**Versi saat ini: V1.7.6**
+**Versi saat ini: V1.7.7**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
 We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfokus pada transaksi, dompet, anggaran, laporan, hutang/piutang/tagihan, serta integrasi AI dan Telegram.
 
+### V1.7.7 — Android Blank Screen Fix
+**Status:** Current
+
+Perubahan:
+- Memperbaiki build Capacitor agar asset web menggunakan path relatif di Android.
+- Menormalkan `BrowserRouter` untuk runtime Capacitor.
+- Menambahkan helper build Capacitor lintas Windows/Linux.
+- Tidak mengubah logika keuangan atau struktur data.
+
 ## Riwayat Versi
 
 ### V1.7.6 — Lively Modern Fintech UI
-**Status:** Current
+**Status:** Previous
 
 Perubahan:
 - Menyegarkan Dashboard dengan sapaan pengguna, status aktif, dan call-to-action yang lebih jelas.
