@@ -10,35 +10,30 @@ permissions:
 
 jobs:
   release:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      VITE_SUPABASE_URL: ${ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      ANDROID_KEYSTORE_BASE64: ${ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${ secrets.ANDROID_KEY_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout verified web source
         uses: actions/checkout@v5
-        with:
-          ref: ${ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Read version
         id: version
+        shell: bash
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Validate prerequisites
         env:
-          VERSION: ${ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$VERSION" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]
           test -n "$VITE_SUPABASE_URL"
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
           test -n "$ANDROID_KEYSTORE_BASE64"
@@ -86,10 +81,22 @@ jobs:
           p=Path("android/app/build.gradle")
           s=p.read_text()
           marker="    buildTypes {\n"
-          signing='''    signingConfigs {\n        release {\n            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")\n            keyAlias System.getenv("ANDROID_KEY_ALIAS")\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD")\n        }\n    }\n\n'''
-          if "signingConfigs {" not in s: s=s.replace(marker,signing+marker,1)
-          pos=s.find(marker); r=s.find("        release {\n",pos)
-          if r<0: raise SystemExit("release buildType not found")
+          signing='''    signingConfigs {
+        release {
+            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+        }
+    }
+
+'''
+          if "signingConfigs {" not in s:
+              s=s.replace(marker,signing+marker,1)
+          pos=s.find(marker)
+          r=s.find("        release {\n",pos)
+          if r<0:
+              raise SystemExit("release buildType not found")
           if "signingConfig signingConfigs.release" not in s[r:r+300]:
               r+=len("        release {\n")
               s=s[:r]+"            signingConfig signingConfigs.release\n"+s[r:]
@@ -106,8 +113,8 @@ jobs:
 
       - name: Create Android release
         env:
-          GH_TOKEN: ${ github.token }}
-          VERSION: ${ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           TAG="android-v${VERSION}"
