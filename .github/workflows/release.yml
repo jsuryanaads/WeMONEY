@@ -64,4 +64,4 @@ jobs:
           gh release create "$TAG" \
             --target "$TARGET_SHA" \
             --title "We MONEY V${VERSION}" \
-            --notes "## We MONEY V${VERSION}\n\n### Changelog\n${CHANGELOG}\n\n### Checkpoint\n- Version: V${VERSION}\n- Branch: main\n- Commit: ${GITHUB_SHA}\n- Pages deployment: verified before release\n\n### Branding\n**We MONEY** — Catat Uangmu, Rencanakan Masa Depanmu"
+            --notes "## We MONEY V${VERSION}\n\n### Changelog\n${CHANGELOG}\n\n### Checkpoint\n- Version: V${VERSION}\n- Branch: main\n- Commit: ${TARGET_SHA}\n- Pages deployment: verified before release\n\n### Branding\n**We MONEY** — Catat Uangmu, Rencanakan Masa Depanmu"
