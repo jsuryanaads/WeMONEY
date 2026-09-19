@@ -6,6 +6,18 @@
 
 We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfokus pada transaksi, dompet, anggaran, laporan, hutang/piutang/tagihan, serta integrasi AI dan Telegram.
 
+### V1.7.8 — Premium Fintech UI Polish
+**Status:** Current
+
+Perubahan:
+- Memperkuat hierarki visual Dashboard tanpa mengubah logika atau data.
+- Menambahkan treatment hero ringan pada area sapaan dan status keuangan.
+- Memperhalus metric cards, CTA, panel, progress bar, insight, dan daftar transaksi.
+- Memperkuat focus state dan interaction state untuk keyboard/accessibility.
+- Memperhalus tampilan form, tabel, tombol utama, dan hover state agar konsisten dengan identitas Modern Fintech.
+- Menjaga responsive mobile dan dukungan Mode Tampilan **Sistem / Terang / Gelap**.
+- Menambahkan motion polish yang tetap menghormati `prefers-reduced-motion`.
+
 ### V1.7.7 — Android Blank Screen Fix
 **Status:** Current
 
