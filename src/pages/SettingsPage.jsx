@@ -29,9 +29,6 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordSaved, setPasswordSaved] = useState(false)
 
   const loadStats = async () => {
     try {
