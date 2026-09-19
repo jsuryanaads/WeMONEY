@@ -1,6 +1,6 @@
 # We MONEY
 
-**Versi saat ini: V1.7.4**
+**Versi saat ini: V1.7.5**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
@@ -8,8 +8,19 @@ We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfok
 
 ## Riwayat Versi
 
-### V1.7.4 — Device & Build Hardening
+### V1.7.5 — Android Icon & Release Hardening
 **Status:** Current
+
+Perubahan:
+- Menetapkan `resources/icon.png` sebagai master icon WeMONEY untuk Android.
+- Menghapus sumber icon SVG rekonstruksi agar tidak terjadi perbedaan visual dengan icon resmi.
+- Memperkuat workflow Android agar sumber PNG dan launcher resources diverifikasi sebelum APK/AAB dibangun.
+- Android release tetap terpisah dari web release dengan tag `android-v1.7.5`.
+- Production Android wajib menghasilkan signed APK dan signed AAB.
+- Menambahkan aturan release terpisah pada [RELEASE_RULES.md](RELEASE_RULES.md).
+
+### V1.7.4 — Device & Build Hardening
+**Status:** Previous
 
 Perubahan:
 - Memperbaiki sintaks `deviceService.js` yang menyebabkan production build gagal.
@@ -17,9 +28,8 @@ Perubahan:
 - Membersihkan reset state modal yang duplikat.
 - Memastikan normalisasi instalasi perangkat menggunakan pemanggilan RPC yang valid.
 
-
 ### V1.7.0 — Notification Center
-**Status:** Current
+**Status:** Previous
 
 Perubahan:
 - Mengaktifkan ikon **Notifikasi** pada header menjadi Notification Center.
@@ -31,7 +41,7 @@ Perubahan:
 - Tidak ada mutasi transaksi atau kewajiban yang dilakukan oleh sistem notifikasi.
 
 ### V1.6.1 — Security & Performance Hardening
-**Status:** Current
+**Status:** Previous
 
 Perubahan:
 - Menambahkan index untuk foreign key obligation_payments.transaction_id.
@@ -43,7 +53,7 @@ Perubahan:
 Setiap perubahan versi wajib dicatat di README ini. `package.json` menjadi **single source of truth** untuk nomor versi aplikasi, sedangkan README menjadi dokumentasi perubahan versi dan fitur.
 
 ### V1.6.0 — Pengaturan Keamanan Akun
-**Status:** Current
+**Status:** Previous
 
 Perubahan:
 - Menambahkan menu **Ganti Password** pada Pengaturan → Profil.
@@ -89,6 +99,15 @@ We MONEY menggunakan format `MAJOR.MINOR.PATCH`.
 - **MINOR** — fitur baru yang backward-compatible.
 - **MAJOR** — perubahan arsitektur atau breaking change.
 
+### Aturan Release
+
+Aturan lengkap web dan Android release tersimpan di [RELEASE_RULES.md](RELEASE_RULES.md).
+
+- Web: `vX.Y.Z`
+- Android: `android-vX.Y.Z`
+- Web dan Android memiliki release terpisah.
+- `package.json` adalah single source of truth untuk versi.
+
 ### Aturan Dokumentasi
 
 Setiap perubahan versi harus memperbarui **dua tempat**:
@@ -127,7 +146,6 @@ Dengan aturan ini, README selalu menjadi **changelog ringkas dan historis** dari
 ## Repository
 
 [GitHub Repository — WeMONEY](https://github.com/jsuryanaads/WeMONEY)
-
 
 ## Deployment
 
