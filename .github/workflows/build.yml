@@ -1,6 +1,7 @@
 name: WeMoney V1 Build Check
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
