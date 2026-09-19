@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "cap:sync": "npm run build && npx cap sync android",
+    "cap:sync": "npm run build:capacitor && npx cap sync android",
     "cap:open": "npx cap open android",
-    "cap:android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "cap:android:build": "npm run build:capacitor && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "build:capacitor": "node scripts/build-capacitor.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
