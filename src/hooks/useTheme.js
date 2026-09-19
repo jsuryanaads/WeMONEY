@@ -25,7 +25,7 @@ export function applyTheme(theme, visualTheme = getInitialVisualTheme()) {
   document.body.classList.toggle('dark', theme === 'dark')
   root.dataset.wmTheme = visualTheme
   root.style.colorScheme = theme
-  Object.entries(preset.vars).forEach(([key, value]) => root.style.setProperty(`--wm-${key}`, value))
+  const vars = theme === 'light' ? (preset.light || preset.vars) : (preset.dark || preset.vars)\n  Object.entries(vars).forEach(([key, value]) => root.style.setProperty(`--wm-${key}`, value))
 }
 
 export function useTheme() {
