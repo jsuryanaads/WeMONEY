@@ -1,6 +1,6 @@
 # We MONEY
 
-**Versi saat ini: V1.7.2**
+**Versi saat ini: V1.7.3**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
