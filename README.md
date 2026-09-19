@@ -95,3 +95,8 @@ Dengan aturan ini, README selalu menjadi **changelog ringkas dan historis** dari
 ## Repository
 
 [GitHub Repository — WeMONEY](https://github.com/jsuryanaads/WeMONEY)
+
+
+## Deployment
+
+Production web: GitHub Pages (`main`). Setiap perubahan ke `main` memicu build dan deployment otomatis setelah pemeriksaan CI berhasil.
