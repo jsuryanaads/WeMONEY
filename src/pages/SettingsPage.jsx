@@ -5,7 +5,7 @@ import AppShell from '../components/layout/AppShell'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { exportTransactionsCsv, getDataStats, requestAccountDeletion, resetFinancialData } from '../services/dataService'
-import { getDeviceId, getMyDevices, revokeDevice, setDeviceName } from '../services/deviceService'
+import { getDeviceId, getMyDevices, revokeDevice, updateCurrentDeviceName } from '../services/deviceService'
 
 const input = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10'
 const button = 'rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
@@ -116,7 +116,7 @@ export default function SettingsPage() {
     e.preventDefault()
     setError(''); setDeviceBusy(true)
     try {
-      setDeviceName(deviceName)
+      await updateCurrentDeviceName(user.id, deviceName)
       await loadDevices()
       window.alert('Nama perangkat berhasil disimpan.')
     } catch (e) { setError(e.message) } finally { setDeviceBusy(false) }
@@ -128,7 +128,7 @@ export default function SettingsPage() {
     try {
       await revokeDevice(deviceId)
       await loadDevices()
-      window.alert('Perangkat berhasil dicabut dari daftar.')
+      window.alert('Instalasi berhasil dicabut dari daftar.')
     } catch (e) { setError(e.message) } finally { setDeviceBusy(false) }
   }
 
@@ -156,13 +156,13 @@ export default function SettingsPage() {
     {modal === 'devices' && <Modal title="Perangkat Saya" icon={Smartphone} onClose={closeModal}>
       <div className="space-y-4">
         <form onSubmit={saveCurrentDeviceName} className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-sm font-extrabold text-slate-900">Nama perangkat ini</p>
+          <p className="text-sm font-extrabold text-slate-900">Nama instalasi ini</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">Gunakan nama seperti “HP Saya”, “HP Istri”, atau “Laptop Kantor”.</p>
           <input className={input} value={deviceName} onChange={e => setDeviceNameState(e.target.value)} maxLength={80} placeholder="Nama perangkat" />
           <button disabled={deviceBusy || !deviceName.trim()} className={`${button} mt-3 w-full`}>Simpan Nama Perangkat</button>
         </form>
         <div className="space-y-2">
-          <p className="text-sm font-extrabold text-slate-900">Perangkat terdaftar</p>
+          <p className="text-sm font-extrabold text-slate-900">Instalasi terdaftar</p>
           {devices.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Belum ada perangkat terdaftar.</p>}
           {devices.map(device => <div key={device.device_id} className="rounded-xl border border-slate-200 p-3"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Smartphone size={18} /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="font-bold text-slate-900">{device.device_name || 'Perangkat'}</p>{device.device_id === currentDeviceId && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">PERANGKAT INI</span>}</div><p className="mt-1 text-xs text-slate-500">{device.platform || 'perangkat'} · terakhir aktif {new Date(device.last_seen_at).toLocaleString('id-ID')}</p></div><button type="button" disabled={deviceBusy} onClick={() => removeDevice(device.device_id, device.device_name)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 disabled:opacity-40" aria-label={`Cabut ${device.device_name || 'perangkat'}`}><Trash2 size={17} /></button></div></div>)}
         </div>
