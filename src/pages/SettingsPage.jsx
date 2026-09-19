@@ -29,6 +29,9 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSaved, setPasswordSaved] = useState(false)
 
   const loadStats = async () => {
     try {
@@ -61,6 +64,18 @@ export default function SettingsPage() {
     const { error: profileError } = await supabase.from('profiles').update({ full_name: name.trim(), updated_at: new Date().toISOString() }).eq('user_id', user.id)
     if (profileError) return setError(profileError.message)
     setSaved(true); setModal(null)
+  }
+
+  async function changePassword(e) {
+    e.preventDefault(); setError(''); setPasswordSaved(false)
+    if (newPassword.length < 8) return setError('Password baru minimal 8 karakter.')
+    if (newPassword !== confirmPassword) return setError('Konfirmasi password tidak sama.')
+    setBusy(true)
+    try {
+      const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
+      if (authError) throw authError
+      setNewPassword(''); setConfirmPassword(''); setPasswordSaved(true)
+    } catch (e) { setError(e.message || 'Gagal mengganti password.') } finally { setBusy(false) }
   }
 
   async function changePassword(e) {
@@ -122,7 +137,7 @@ export default function SettingsPage() {
 
   function closeModal() {
     if (busy || deviceBusy) return
-    setModal(null); setResetText(''); setRequestText(''); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(false)
+    setModal(null); setResetText(''); setRequestText(''); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(false); setNewPassword(''); setConfirmPassword(''); setPasswordSaved(false)
   }
 
   const remaining = stats ? statItems.filter(([, key]) => Number(stats[key] || 0) > 0) : []
@@ -133,7 +148,7 @@ export default function SettingsPage() {
       <div><h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Pengaturan</h2><p className="mt-1 text-sm text-slate-500">Kelola akun dan data We MONEY.</p></div>
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{error}</div>}
       {stats && <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">{statItems.map(([label, key]) => <div key={key} className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-0.5 text-lg font-extrabold text-slate-900">{Number(stats[key] || 0).toLocaleString('id-ID')}</p></div>)}</div>}
-      <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Akun & Integrasi</p><SettingItem icon={Smartphone} title="Perangkat Saya" description={`${devices.length} perangkat terhubung ke akun`} onClick={() => setModal('devices')} /><div className="h-2"/><SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} /><div className="h-2"/><SettingItem icon={Bot} title="Telegram" description="Integrasi privat untuk mencatat lewat Bot Telegram" onClick={() => navigate('/telegram')} /></div>
+      <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Akun & Integrasi</p><SettingItem icon={Smartphone} title="Perangkat Saya" description={`${devices.length} perangkat terhubung ke akun`} onClick={() => setModal('devices')} /><div className="h-2"/><SettingItem icon={User} title="Profil" description="Nama dan email akun" onClick={() => setModal('profile')} /><div className="h-2"/><SettingItem icon={UserX} title="Keamanan Akun" description="Ganti password akun We MONEY" onClick={() => setModal('password')} /><div className="h-2"/><SettingItem icon={Bot} title="Telegram" description="Integrasi privat untuk mencatat lewat Bot Telegram" onClick={() => navigate('/telegram')} /></div>
       <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Data</p><SettingItem icon={Download} title="Export" description="Backup transaksi ke CSV" onClick={exportData} disabled={busy} /><div className="h-2"/><SettingItem icon={Database} title="Reset Data" description="Hapus seluruh data keuangan, kategori dan akun tetap" onClick={() => setModal('reset')} /></div>
       <div className="pt-1"><p className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Zona Berbahaya</p><SettingItem icon={UserX} title="Ajukan Hapus Akun" description={deleteRequest?.status === 'pending' ? 'Pengajuan sedang menunggu administrator' : 'Penghapusan harus disetujui administrator'} danger onClick={() => setModal('delete-request')} disabled={busy || deleteRequest?.status === 'pending'} /></div>
       {deleteRequest?.status === 'pending' && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"><p className="font-extrabold">Pengajuan penghapusan sedang diproses</p><p className="mt-1 leading-6">Administrator akan memeriksa pengajuan. Akun tidak dihapus otomatis.</p></div>}
@@ -159,6 +174,10 @@ export default function SettingsPage() {
 
     {modal === 'profile' && <Modal title="Profil" icon={User} onClose={closeModal}>
       <form onSubmit={save} className="space-y-4"><label className="block text-sm font-semibold">Nama lengkap<input className={input} value={name} onChange={e => setName(e.target.value)} /></label><label className="block text-sm font-semibold">Email<input disabled className={`${input} bg-slate-50`} value={user?.email || ''} /></label><button disabled={busy} className={`${button} w-full`}>Simpan Profil</button>{saved && <p className="text-sm font-semibold text-emerald-600">Profil tersimpan.</p>}</form>
+    </Modal>}
+
+    {modal === 'password' && <Modal title="Ganti Password" icon={UserX} onClose={closeModal}>
+      <div className="space-y-4"><div className="rounded-xl bg-slate-50 p-4"><p className="text-sm font-extrabold text-slate-900">Keamanan Akun</p><p className="mt-1 text-xs leading-5 text-slate-500">Gunakan password baru minimal 8 karakter. Anda harus sudah login untuk melakukan perubahan.</p></div><form onSubmit={changePassword} className="space-y-3"><label className="block text-sm font-semibold">Password baru<input type="password" autoComplete="new-password" minLength={8} className={input} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimal 8 karakter" required /></label><label className="block text-sm font-semibold">Konfirmasi password baru<input type="password" autoComplete="new-password" minLength={8} className={input} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Ulangi password baru" required /></label><button type="submit" disabled={busy || !newPassword || !confirmPassword} className={`${button} w-full`}>Ganti Password</button>{passwordSaved && <p className="text-sm font-semibold text-emerald-600">Password berhasil diperbarui.</p>}</form></div>
     </Modal>}
 
     {modal === 'reset' && <Modal title="Reset Data" icon={Database} danger onClose={closeModal}>
