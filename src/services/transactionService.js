@@ -72,12 +72,7 @@ export async function updateTransaction(id, userId, payload) {
 }
 
 export async function deleteTransaction(id, userId) {
-  const { data: tx, error: findError } = await supabase.from('transactions').select('receipt_id').eq('id', id).eq('user_id', userId).single()
-  if (findError) throw findError
-  const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId)
+  if (!id || !userId) throw new Error('Transaksi tidak valid.')
+  const { error } = await supabase.rpc('delete_my_transaction', { p_transaction_id: id })
   if (error) throw error
-  if (tx.receipt_id) {
-    const { error: receiptError } = await supabase.from('receipts').delete().eq('id', tx.receipt_id).eq('user_id', userId)
-    if (receiptError) throw receiptError
-  }
 }
