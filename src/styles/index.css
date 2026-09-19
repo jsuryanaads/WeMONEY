@@ -62,7 +62,6 @@ html[data-wm-theme] .rounded-2xl.bg-white,
 html[data-wm-theme] .rounded-xl.bg-white { box-shadow: 0 12px 30px rgb(2 6 23 / .07); }
 html[data-wm-theme="default"] .rounded-2xl.bg-white,
 html[data-wm-theme="default"] .rounded-xl.bg-white { border-color: rgb(51 65 85 / .7); }
-html[data-wm-theme="independence"] [class~="bg-blue-600"], html[data-wm-theme="independence"] [class~="bg-blue-700"] { color: #fff; }
 
 .dark .bg-white\/90 { background-color: rgb(15 23 42 / .90); }
 .dark .bg-white\/95 { background-color: rgb(15 23 42 / .95); }
