@@ -1,12 +1,24 @@
 # We MONEY
 
-**Versi saat ini: V1.7.5**
+**Versi saat ini: V1.7.6**
 
 **Catat Uangmu, Rencanakan Masa Depanmu**
 
 We MONEY adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang berfokus pada transaksi, dompet, anggaran, laporan, hutang/piutang/tagihan, serta integrasi AI dan Telegram.
 
 ## Riwayat Versi
+
+### V1.7.6 — Lively Modern Fintech UI
+**Status:** Current
+
+Perubahan:
+- Menyegarkan Dashboard dengan sapaan pengguna, status aktif, dan call-to-action yang lebih jelas.
+- Menambahkan shortcut visual untuk **Catat transaksi** dan **Lihat laporan**.
+- Menambahkan ambient glow, micro-interaction, hover motion, entrance animation, dan subtle pulse pada elemen utama.
+- Mempertahankan identitas **We MONEY — Modern Fintech** tanpa menambah pilihan tema visual baru.
+- Tetap mendukung Mode Tampilan **Sistem / Terang / Gelap**.
+- Perubahan bersifat visual dan tidak mengubah struktur atau logika data keuangan.
+
 
 ### V1.7.5 — Android Icon & Release Hardening
 **Status:** Current
