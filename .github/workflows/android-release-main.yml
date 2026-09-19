@@ -1,0 +1,131 @@
+name: WeMONEY Android Release
+
+on:
+  workflow_run:
+    workflows: ["We MONEY Release"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      VITE_SUPABASE_URL: ${ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      ANDROID_KEYSTORE_BASE64: ${ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Checkout verified web source
+        uses: actions/checkout@v5
+        with:
+          ref: ${ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Validate prerequisites
+        env:
+          VERSION: ${ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web and Android
+        run: |
+          set -euo pipefail
+          npm run build
+          npx cap add android
+          npx cap sync android
+          npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
+
+      - name: Configure signing
+        run: |
+          set -euo pipefail
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/wemoney-release.keystore
+          export ANDROID_KEYSTORE_PATH="$GITHUB_WORKSPACE/android/wemoney-release.keystore"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/build.gradle")
+          s=p.read_text()
+          marker="    buildTypes {\n"
+          signing='''    signingConfigs {\n        release {\n            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")\n            keyAlias System.getenv("ANDROID_KEY_ALIAS")\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD")\n        }\n    }\n\n'''
+          if "signingConfigs {" not in s: s=s.replace(marker,signing+marker,1)
+          pos=s.find(marker); r=s.find("        release {\n",pos)
+          if r<0: raise SystemExit("release buildType not found")
+          if "signingConfig signingConfigs.release" not in s[r:r+300]:
+              r+=len("        release {\n")
+              s=s[:r]+"            signingConfig signingConfigs.release\n"+s[r:]
+          p.write_text(s)
+          PY
+
+      - name: Build signed APK and AAB
+        working-directory: android
+        run: |
+          set -euo pipefail
+          export ANDROID_KEYSTORE_PATH="$GITHUB_WORKSPACE/android/wemoney-release.keystore"
+          ./gradlew assembleRelease --no-daemon
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Create Android release
+        env:
+          GH_TOKEN: ${ github.token }}
+          VERSION: ${ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="android-v${VERSION}"
+          TITLE="WeMONEY Android v${VERSION}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --latest=false --notes "WeMONEY Android v${VERSION}
+
+- Public Android release
+- Capacitor Android build from the verified web release
+- Signed release APK
+- Signed release AAB
+
+Web release v${VERSION} remains separate."
+          fi
+          gh release upload "$TAG" android/app/build/outputs/apk/release/app-release.apk --clobber
+          gh release upload "$TAG" android/app/build/outputs/bundle/release/app-release.aab --clobber
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f android/wemoney-release.keystore
