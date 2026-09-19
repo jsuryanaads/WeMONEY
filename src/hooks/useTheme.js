@@ -3,9 +3,13 @@ import { getInitialVisualTheme, THEME_KEY, THEME_PRESETS } from '../theme/themeT
 
 const MODE_KEY = 'wemoney-theme-mode'
 
-export function getInitialTheme() {
+export function getInitialThemeMode() {
   const saved = window.localStorage?.getItem(MODE_KEY)
-  if (saved === 'dark' || saved === 'light') return saved
+  if (saved === 'dark' || saved === 'light' || saved === 'system') return saved
+  return 'system'
+}
+
+export function getSystemTheme() {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
@@ -20,16 +24,28 @@ export function applyTheme(theme, visualTheme = getInitialVisualTheme()) {
 }
 
 export function useTheme() {
-  const [theme, setThemeState] = useState(getInitialTheme)
+  const [themeMode, setThemeModeState] = useState(getInitialThemeMode)
+  const [theme, setThemeState] = useState(() => themeMode === 'system' ? getSystemTheme() : themeMode)
   const [visualTheme, setVisualThemeState] = useState(getInitialVisualTheme)
 
   useEffect(() => {
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)')
+    const syncSystemTheme = () => {
+      if (themeMode === 'system') setThemeState(media?.matches ? 'dark' : 'light')
+    }
+    syncSystemTheme()
+    media?.addEventListener?.('change', syncSystemTheme)
     applyTheme(theme, visualTheme)
-    window.localStorage?.setItem(MODE_KEY, theme)
+    window.localStorage?.setItem(MODE_KEY, themeMode)
     window.localStorage?.setItem(THEME_KEY, visualTheme)
-  }, [theme, visualTheme])
+    return () => media?.removeEventListener?.('change', syncSystemTheme)
+  }, [themeMode, theme, visualTheme])
 
-  const setTheme = value => setThemeState(value === 'dark' ? 'dark' : 'light')
+  const setTheme = value => {
+    const mode = value === 'dark' || value === 'light' || value === 'system' ? value : 'system'
+    setThemeModeState(mode)
+    setThemeState(mode === 'system' ? getSystemTheme() : mode)
+  }
   const setVisualTheme = value => setVisualThemeState(THEME_PRESETS[value] ? value : 'default')
-  return { theme, setTheme, visualTheme, setVisualTheme }
+  return { theme, themeMode, setTheme, visualTheme, setVisualTheme }
 }
