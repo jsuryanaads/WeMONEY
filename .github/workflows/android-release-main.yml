@@ -1,9 +1,9 @@
 name: WeMONEY Android Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["We MONEY Release"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -12,12 +12,19 @@ permissions:
 jobs:
   release:
     name: Android Production Release
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
 
     steps:
-      - name: Checkout
+      - name: Checkout verified Web release commit
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -180,9 +187,18 @@ jobs:
           Web release v$VERSION remains separate."
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG"               android/app/build/outputs/apk/release/app-release.apk               android/app/build/outputs/bundle/release/app-release.aab               --clobber
+            gh release upload "$TAG" \
+              android/app/build/outputs/apk/release/app-release.apk \
+              android/app/build/outputs/bundle/release/app-release.aab \
+              --clobber
           else
-            gh release create "$TAG"               --target "$GITHUB_SHA"               --title "$TITLE"               --latest=false               --notes "$NOTES"               android/app/build/outputs/apk/release/app-release.apk               android/app/build/outputs/bundle/release/app-release.aab
+            gh release create "$TAG" \
+              --target "$(git rev-parse HEAD)" \
+              --title "$TITLE" \
+              --latest=false \
+              --notes "$NOTES" \
+              android/app/build/outputs/apk/release/app-release.apk \
+              android/app/build/outputs/bundle/release/app-release.aab
           fi
 
       - name: Remove temporary keystore
