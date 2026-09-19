@@ -89,7 +89,12 @@ export async function registerCurrentDevice(userId) {
 }
 
 export async function normalizeMyDevices() {
-  const { data, error } = await supabase.rpc('normalize_my_devices')\n  if (error) throw error\n  return data ?? []\n}\n\nexport async function getMyDevices() {
+  const { data, error } = await supabase.rpc('normalize_my_devices')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getMyDevices() {
   const { data, error } = await supabase.rpc('list_my_devices')
   if (error) throw error
   return data ?? []
@@ -100,7 +105,11 @@ export async function updateCurrentDeviceName(userId, name) {
   const value = setDeviceName(name)
   const { error } = await supabase
     .from('user_devices')
-    .update({ device_name: value, updated_at: new Date().toISOString(), last_seen_at: new Date().toISOString() })
+    .update({
+      device_name: value,
+      updated_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
+    })
     .eq('user_id', userId)
     .eq('device_id', getDeviceId())
   if (error) throw error
