@@ -21,7 +21,7 @@ Perubahan:
 
 
 ### V1.7.5 — Android Icon & Release Hardening
-**Status:** Current
+**Status:** Previous
 
 Perubahan:
 - Menetapkan `resources/icon.png` sebagai master icon WeMONEY untuk Android.
