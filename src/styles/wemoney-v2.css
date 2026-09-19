@@ -134,7 +134,7 @@
 }
 
 
-/* V1.7.5 Live Fintech Motion — visual-only enhancement. */
+/* V1.7.6 Live Fintech Motion — visual-only enhancement. */
 .wm-shell::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(520px 260px at 8% 18%,color-mix(in srgb,var(--wm-accent) 6%,transparent),transparent 70%),radial-gradient(620px 320px at 92% 72%,color-mix(in srgb,var(--wm-primary) 5%,transparent),transparent 72%);animation:wm-ambient 12s ease-in-out infinite alternate}
 .wm-shell>*{position:relative;z-index:1}
 .wm-sidebar{transition:transform .2s ease,box-shadow .25s ease,border-color .25s ease}
