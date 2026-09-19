@@ -1,9 +1,8 @@
 name: WeMONEY Android Release
 
 on:
-  workflow_run:
-    workflows: ["We MONEY Release"]
-    types: [completed]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
