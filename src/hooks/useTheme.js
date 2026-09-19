@@ -13,6 +13,11 @@ export function getSystemTheme() {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+export function getInitialTheme() {
+  const mode = getInitialThemeMode()
+  return mode === 'system' ? getSystemTheme() : mode
+}
+
 export function applyTheme(theme, visualTheme = getInitialVisualTheme()) {
   const root = document.documentElement
   const preset = THEME_PRESETS[visualTheme] || THEME_PRESETS.default
