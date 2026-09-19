@@ -75,6 +75,13 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Verify WeMONEY icon source
+        run: |
+          set -euo pipefail
+          test -s resources/icon.png
+          file resources/icon.png
+          echo "Using WeMONEY master icon: resources/icon.png"
+
       - name: Build web
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -87,6 +94,14 @@ jobs:
           npx cap add android
           npx cap sync android
           npx @capacitor/assets generate --android --iconBackgroundColor '#07152f' --iconBackgroundColorDark '#07152f'
+
+      - name: Verify generated Android launcher icon
+        run: |
+          set -euo pipefail
+          test -d android/app/src/main/res
+          test -n "$(find android/app/src/main/res -type f \( -name 'ic_launcher.png' -o -name 'ic_launcher_round.png' -o -name 'ic_launcher_foreground.png' \) -print -quit)"
+          echo "Generated Android launcher resources:"
+          find android/app/src/main/res -type f \( -name 'ic_launcher.png' -o -name 'ic_launcher_round.png' -o -name 'ic_launcher_foreground.png' \) -print | sort
 
       - name: Configure signing
         env:
@@ -158,6 +173,7 @@ jobs:
 
           - Public Android release
           - Capacitor Android build
+          - WeMONEY icon source: resources/icon.png
           - Signed release APK
           - Signed release AAB
 
